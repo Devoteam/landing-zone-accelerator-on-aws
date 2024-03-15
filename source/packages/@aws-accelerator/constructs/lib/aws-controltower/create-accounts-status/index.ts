@@ -213,6 +213,29 @@ async function provisionAccount(accountToAdd: AccountConfig): Promise<AWS.Servic
   const provisioningArtifactId = provisioningArtifact?.Id;
   console.log(`Service Catalog Provisioning Artifact Id ${provisioningArtifactId}`);
 
+  // ########################################################
+  // Devoteam CUSTOMIZATION --- Mihai Baumgarten - 15.03.2024
+  // Workaround the SSO mapping when AWS account email address contains + plus
+  let ssoEmail = accountToAdd.email;
+  console.log(`Devoteam code - configured user email: ${ssoEmail}`);
+  const indexPlusSign = ssoEmail.indexOf('+');
+  if (indexPlusSign > 0) {
+    // Email contains + sign - need to fix the email address
+    console.log(`Devoteam code - user email is not SSO compatible`);
+    const prefix = ssoEmail.substring(0, indexPlusSign);
+    if (prefix == 'de.aws.operations') {
+      // The email is the operations generic one, take the part after + sign
+      ssoEmail = ssoEmail.substring(indexPlusSign + 1);
+    } else {
+      // The email is probably individual, take the part before + sign
+      const indexA = ssoEmail.indexOf('@');
+      const emailEnd = ssoEmail.substring(indexA);
+      ssoEmail = prefix + emailEnd;
+    }
+    console.log(`Devoteam code - Parsed SSO email: ${ssoEmail}`);
+  }
+  // ########################################################
+
   const provisionInput = {
     ProductName: 'AWS Control Tower Account Factory',
     ProvisionToken: provisionToken,
@@ -233,7 +256,7 @@ async function provisionAccount(accountToAdd: AccountConfig): Promise<AWS.Servic
       },
       {
         Key: 'SSOUserEmail',
-        Value: accountToAdd.email,
+        Value: ssoEmail, // Devoteam CUSTOMIZATION
       },
       {
         Key: 'SSOUserFirstName',
