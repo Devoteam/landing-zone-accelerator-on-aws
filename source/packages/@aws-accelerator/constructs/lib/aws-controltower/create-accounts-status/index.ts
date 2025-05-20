@@ -230,8 +230,9 @@ async function provisionAccount(accountToAdd: AccountConfig): Promise<ProvisionP
   console.log(`Service Catalog Provisioning Artifact Id ${provisioningArtifactId}`);
   
   // ########################################################
-  // Devoteam CUSTOMIZATION --- Mihai Baumgarten - 15.03.2024
+  // Devoteam CUSTOMIZATION --- Mihai Baumgarten - 15.03.2024 !! UPDATE: code not usefull as of 20.05.2025 (Mihai)
   // Workaround the SSO mapping when AWS account email address contains + plus
+  /*
   let ssoEmail = accountToAdd.email;
   console.log(`Devoteam code - configured user email: ${ssoEmail}`);
   const indexPlusSign = ssoEmail.indexOf('+');
@@ -250,6 +251,7 @@ async function provisionAccount(accountToAdd: AccountConfig): Promise<ProvisionP
     }
     console.log(`Devoteam code - Parsed SSO email: ${ssoEmail}`);
   }
+    */
   // ########################################################
 
   const provisionInput = {
@@ -272,15 +274,23 @@ async function provisionAccount(accountToAdd: AccountConfig): Promise<ProvisionP
       },
       {
         Key: 'SSOUserEmail',
-        Value: ssoEmail, // Devoteam CUSTOMIZATION
+        // ORIGINAL CODE: accountToAdd.email;
+        //Value: ssoEmail, // Devoteam CUSTOMIZATION Mihai (Obsolete)
+        Value: "de.aws.operations@devoteam.com"
       },
       {
         Key: 'SSOUserFirstName',
-        Value: accountToAdd.name,
+        // Original Code
+        //Value: accountToAdd.name,
+        // Devoteam customization
+        Value: "Devoteam",
       },
       {
         Key: 'SSOUserLastName',
-        Value: accountToAdd.name,
+        // Original Code
+        //Value: accountToAdd.name,
+        // Devoteam customization
+        Value: "Admin",
       },
       {
         Key: 'VPCOptions',
