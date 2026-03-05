@@ -40,7 +40,7 @@ export class GovCloudAccountVendingProductStack extends cdk.aws_servicecatalog.P
     const accountName = new cdk.CfnParameter(this, 'AccountName', {
       type: 'String',
       description:
-        "The friendly name of the member account.  The account name can consist of only the characters [a-z],[A-Z],[0-9], hyphen (-), or dot (.) You can't separate characters with a dash (–).",
+        "The friendly name of the member account.  The account name can consist of only the characters [a-z],[A-Z],[0-9], hyphen (-), or dot (.) You can't separate characters with a dash (-).",
     });
     const emailAddress = new cdk.CfnParameter(this, 'AccountEmail', {
       type: 'String',

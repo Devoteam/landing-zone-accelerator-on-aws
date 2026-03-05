@@ -96,16 +96,16 @@ Some additional considerations: in case a 3rd party (such as AMS) manages custom
 
 CloudWatch metrics and alarms are deployed via the Tax LZA that align to IRS Pub 1075 requirements and the related CIS controls below. These can be reviewed and modified to meet your specific needs within the [Security Configuration] file.
 
-- CIS 1.1 – Avoid the use of the "root" account
-- CIS 3.1 – Ensure a log metric filter and alarm exist for unauthorized API calls
-- CIS 3.2 – Ensure a log metric filter and alarm exist for AWS Management Console sign-in without MFA
-- CIS 3.3 – Ensure a log metric filter and alarm exist for usage of "root" account
-- CIS 3.4 – Ensure a log metric filter and alarm exist for IAM policy changes
-- CIS 3.5 – Ensure a log metric filter and alarm exist for CloudTrail configuration changes
-- CIS 3.8 – Ensure a log metric filter and alarm exist for S3 bucket policy changes
-- CIS 3.12 – Ensure a log metric filter and alarm exist for changes to network gateways
-- CIS 3.13 – Ensure a log metric filter and alarm exist for route table changes
-- CIS 3.14 – Ensure a log metric filter and alarm exist for VPC changes
+- CIS 1.1 - Avoid the use of the "root" account
+- CIS 3.1 - Ensure a log metric filter and alarm exist for unauthorized API calls
+- CIS 3.2 - Ensure a log metric filter and alarm exist for AWS Management Console sign-in without MFA
+- CIS 3.3 - Ensure a log metric filter and alarm exist for usage of "root" account
+- CIS 3.4 - Ensure a log metric filter and alarm exist for IAM policy changes
+- CIS 3.5 - Ensure a log metric filter and alarm exist for CloudTrail configuration changes
+- CIS 3.8 - Ensure a log metric filter and alarm exist for S3 bucket policy changes
+- CIS 3.12 - Ensure a log metric filter and alarm exist for changes to network gateways
+- CIS 3.13 - Ensure a log metric filter and alarm exist for route table changes
+- CIS 3.14 - Ensure a log metric filter and alarm exist for VPC changes
 
 ### Config rules implemented
 

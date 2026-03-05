@@ -1874,7 +1874,7 @@ export interface IMetricSetConfig {
    * @example
    * ```
    * metrics:
-   *         # CIS 1.1 – Avoid the use of the "root" account
+   *         # CIS 1.1 - Avoid the use of the "root" account
    *         - filterName: RootAccountMetricFilter
    *           logGroupName: aws-controltower/CloudTrailLogs
    *           filterPattern: '{$.userIdentity.type="Root" && $.userIdentity.invokedBy NOT EXISTS && $.eventType !="AwsServiceEvent"}'
@@ -2012,7 +2012,7 @@ export interface IAlarmSetConfig {
    * @example
    * ```
    * alarms:
-   *         # CIS 1.1 – Avoid the use of the "root" account
+   *         # CIS 1.1 - Avoid the use of the "root" account
    *         - alarmName: CIS-1.1-RootAccountUsage
    *           alarmDescription: Alarm for usage of "root" account
    *           snsAlertLevel: Low (Deprecated)
@@ -2257,7 +2257,7 @@ export interface ICloudWatchConfig {
    * @example
    * ```
    * metrics:
-   *         # CIS 1.1 – Avoid the use of the "root" account
+   *         # CIS 1.1 - Avoid the use of the "root" account
    *         - filterName: RootAccountMetricFilter
    *           logGroupName: aws-controltower/CloudTrailLogs
    *           filterPattern: '{$.userIdentity.type="Root" && $.userIdentity.invokedBy NOT EXISTS && $.eventType !="AwsServiceEvent"}'
@@ -2275,7 +2275,7 @@ export interface ICloudWatchConfig {
    * @example
    * ```
    * alarms:
-   *         # CIS 1.1 – Avoid the use of the "root" account
+   *         # CIS 1.1 - Avoid the use of the "root" account
    *         - alarmName: CIS-1.1-RootAccountUsage
    *           alarmDescription: Alarm for usage of "root" account
    *           snsAlertLevel: Low (Deprecated)

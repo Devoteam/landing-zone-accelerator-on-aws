@@ -7,7 +7,7 @@ The reference guide can be accessed via the following link: https://aws.amazon.c
 
 Please also check the notes below for specific services:
 
-Alexa for Business (for healthcare skills only – requires Alexa Skills BAA. See https://d1.awsstatic.com/whitepapers/compliance/AWS_HIPAA_Compliance_Whitepaper.pdf for details)\
+Alexa for Business (for healthcare skills only - requires Alexa Skills BAA. See https://d1.awsstatic.com/whitepapers/compliance/AWS_HIPAA_Compliance_Whitepaper.pdf for details)\
 AWS Amplify Console\
 Amazon API Gateway\
 AWS Application Migration Service\

@@ -79,7 +79,7 @@ export interface ITargetGroupHealthCheckType {
   readonly protocol?: TargetGroupHealthCheckProtocolType;
   /**
    * The amount of time, in seconds, during which no response from a target means a failed health check.
-   * The range is 2–120 seconds.
+   * The range is 2-120 seconds.
    * For target groups with a protocol of HTTP, the default is 6 seconds.
    * For target groups with a protocol of TCP, TLS or HTTPS, the default is 10 seconds.
    * For target groups with a protocol of GENEVE, the default is 5 seconds.
