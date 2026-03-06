@@ -12,6 +12,7 @@
  */
 
 import * as t from '../common/types';
+import { StreamMode } from '@aws-sdk/client-kinesis';
 /**
  * {@link IGlobalConfig} / {@link IControlTowerConfig} / {@link IControlTowerLandingZoneConfig} / {@link IControlTowerLandingZoneLoggingConfig}
  *
@@ -167,7 +168,7 @@ export interface IControlTowerControlConfig {
    */
   readonly deploymentTargets: t.IDeploymentTargets;
   /**
-   * (Optional) Region(s) where this service quota increase will be requested. Service Quota increases will be requested in the home region only if this property is not defined.
+   * (Optional) Region(s) where this service quota increase will be requested. Service Quota increases will be requested in the home region only if this property is not defined.  If this property is defined, the regions must also be listed in the enabledRegions section or the change will not be applied.
    */
   readonly regions?: t.Region[];
 }
@@ -321,6 +322,33 @@ export interface ICentralizeCdkBucketsConfig {
 }
 
 /**
+ * *{@link GlobalConfig} / {@link cdkOptionsConfig} / {@link stackRefactor}*
+ *
+ * @experimental
+ * This configuration is intended for internal development purposes only.
+ * It will not trigger an actual stack refactor when used.
+ *
+ * @description
+ * LZA Stack refactor configuration. This interface allows you to specify which stacks should undergo refactoring.
+ * Refactoring helps optimize resource distribution and avoid exceeding the 500-resource limit for CloudFormation stacks.
+ *
+ * @remarks
+ * Stack refactoring is a one-time action. Please change this configuration back to false when stack refactoring is finished.
+ *
+ * @example
+ * ```
+ * stackRefactor:
+ *   networkVpcStack: true
+ * ```
+ */
+export interface IStackRefactor {
+  /**
+   * Enables refactoring for the network stacks.
+   */
+  networkVpcStack?: boolean;
+}
+
+/**
  * *{@link GlobalConfig} / {@link cdkOptionsConfig}*
  *
  * @description
@@ -334,6 +362,8 @@ export interface ICentralizeCdkBucketsConfig {
  * cdkOptions:
  *   centralizeBuckets: true
  *   useManagementAccessRole: true
+ *   stackRefactor:
+ *    networkVpcStack: true
  * ```
  */
 export interface ICdkOptionsConfig {
@@ -358,6 +388,15 @@ export interface ICdkOptionsConfig {
    * Forces the Accelerator to deploy the bootstrapping stack and circumvent the ssm parameter check. This option is needed when adding or removing a custom deployment role
    */
   readonly forceBootstrap?: boolean;
+  /**
+   * Enables stack refactoring for specific stacks. When enabled, the Accelerator will reorganize the resources defined in the stack to avoid exceeding the
+   * 500-resource limit for CloudFormation stacks.
+   *
+   * @experimental
+   * This configuration is intended for internal development purposes only.
+   * It will not trigger an actual stack refactor when used.
+   */
+  readonly stackRefactor?: IStackRefactor;
 }
 
 /**
@@ -1091,10 +1130,13 @@ export interface ICloudWatchLogsExclusionConfig {
  * @example
  * ```
  * logging:
- *  - cloudwatchLogs:
- *  - firehose:
- *     - fileExtension: undefined | 'json.gz'
- *
+ *  cloudwatchLogs:
+ *    firehose:
+ *      fileExtension: json.gz
+ *      lambdaProcessor:
+ *        retries: 3
+ *        bufferSize: 0.2
+ *        bufferInterval: 60
  * ```
  */
 export interface ICloudWatchFirehoseConfig {
@@ -1111,6 +1153,147 @@ export interface ICloudWatchFirehoseConfig {
    *
    */
   readonly fileExtension?: t.NonEmptyString;
+  /**
+   * Describes hints for the firehose lambda processor when Amazon Data Firehose recieves data. Amazon Data Firehose can invokes Lambda function to take source data and deliver the data to destination specified in dynamic partition.
+   */
+  readonly lambdaProcessor?: ICloudWatchFirehoseLambdaProcessorConfig;
+}
+
+/**
+ * @remarks
+ * Lambda processor parameters for Amazon Kinesis DataFirehose
+ * Ref:  Ref: https://docs.aws.amazon.com/firehose/latest/dev/data-transformation.html
+ *
+ * @example
+ * ```
+ * lambdaProcessor:
+ *   retries: 3
+ *   bufferSize: 0.2
+ *   bufferInterval: 60
+ * ```
+ */
+export interface ICloudWatchFirehoseLambdaProcessorConfig {
+  /**
+   * @remarks
+   * By default, Kinesis Data Firehose retries a Lambda invocation 3 times if the invocation fails.
+   * @default 3
+   */
+  readonly retries?: number;
+  /**
+   * The AWS Lambda function has a 6 MB invocation payload quota. Your data can expand in size after it's processed by the AWS Lambda function. A smaller buffer size allows for more room should the data expand after processing. Range is 0.2 to 3 MB.
+   * @default 0.2
+   */
+  readonly bufferSize?: number;
+  /**
+   * The period of time in seconds during which Amazon Data Firehose buffers incoming data before invoking the AWS Lambda function. The AWS Lambda function is invoked once the value of the buffer size or the buffer interval is reached. Range 60 to 900s.
+   * @default 60
+   */
+  readonly bufferInterval?: number;
+}
+
+/**
+ * *{@link IGlobalConfig} / {@link ILoggingConfig} / {@link ICloudWatchLogsConfig}/ {@link ICloudWatchSubscriptionConfig}*
+ *
+ * @description
+ * Accelerator global CloudWatch Logs subscription configuration
+ *
+ * @example
+ * ```
+ *  logging:
+ *    cloudwatchLogs:
+ *      subscription:
+ *        type: ACCOUNT
+ *        selectionCriteria: 'LogGroupName NOT IN [ /aws/lambda/AWSAccelerator-FirehoseRecordsProcessor development AppA]'
+ *        overrideExisting: true
+ * ```
+ */
+export interface ICloudWatchSubscriptionConfig {
+  /**
+   * @remarks
+   * If this property is undefined, Cloudwatch logs subscription filter will be applied for each log group by a Lambda function rather than through a CloudWatch account-level subscription filter.
+   *
+   * @example
+   * ```
+   * type: ACCOUNT
+   * ```
+   * When set to 'ACCOUNT' account wide subscription is applied as per https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters-AccountLevel.html.
+   * When set to 'LOG_GROUP' it will run a function to apply to each log group using a lambda function.
+   * Defaults to 'LOG_GROUP'.
+   */
+  readonly type: 'ACCOUNT' | 'LOG_GROUP';
+  /**
+   *
+   * Only applicable, when type is set to 'ACCOUNT'. The selection criteria is set to take input as string based on service api listed here: https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutAccountPolicy.html
+   * @example
+   * ```
+   * selectionCriteria: 'LogGroupName NOT IN ["/aws/lambda/AWSAccelerator-FirehoseRecordsProcessor", "development", "AppA"]'
+   * ```
+   * This means log group name /aws/lambda/AWSAccelerator-FirehoseRecordsProcessor, development, AppA will not have a subscription filter. Please use this to prevent log recursion (https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/Subscriptions-recursion-prevention.html).
+   *
+   */
+  readonly selectionCriteria?: t.NonEmptyString;
+  /**
+   * (OPTIONAL) Indicates whether existing CloudWatch Log subscription configuration can be overwritten. Any existing policy will be updated and renamed to 'ACCELERATOR_ACCOUNT_SUBSCRIPTION_POLICY'. Upon deleting the solution or disabling logging for cloudwatch in global config, this policy will be removed. If type is set to 'LOG_GROUP' this parameter will not be used.
+   *
+   * @default false
+   */
+  readonly overrideExisting?: boolean;
+  /**
+   * (OPTIONAL) Indicates whether to apply specific filter pattern to the subscription as per https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CreateSubscriptionFilter-Account.html
+   * If no value is provided all logs events will match filter criteria
+   *
+   * (This property is only applicable when type is set to 'LOG_GROUP'.
+   */
+  readonly filterPattern?: t.NonEmptyString;
+}
+
+/**
+ * *{@link IGlobalConfig} / {@link ILoggingConfig} / {@link ICloudWatchLogsConfig}/ {@link ICloudWatchKinesisConfig}*
+ *
+ * @description
+ * Accelerator global CloudWatch Logs Kinesis stream configuration
+ *
+ * @example
+ * ```
+ *  logging:
+ *    cloudwatchLogs:
+ *      kinesis:
+ *        streamingMode: PROVISIONED
+ *        shardCount: 5
+ *        retention: 240
+ * ```
+ */
+export interface ICloudWatchKinesisConfig {
+  /**
+   * @remarks
+   * Specifies the capacity mode to which you want to set your data stream. Currently, in Kinesis Data Streams, you can choose between an on-demand capacity mode and a provisioned capacity mode for your data streams.
+   * Please note service might limit how many times you can toggle between stream modes as mentioned on [this page](https://docs.aws.amazon.com/streams/latest/dev/how-do-i-size-a-stream.html)
+   * Defaults to PROVISIONED.
+   * Choose any value based on this page: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-kinesis/Variable/StreamMode/
+   * @default PROVISIONED
+   */
+  readonly streamingMode: StreamMode;
+  /**
+   * @remarks
+   * The number of shards that the stream uses. For greater provisioned throughput, increase the number of shards. This is only applicable if streamingMode is 'PROVISIONED'.
+   * The value is ignored if streaming mode is 'ON_DEMAND'
+   * Shards cannot be increased more than double. For example, if shard count changes from 1 to 4 then Kinesis service will throw error
+   * `UpdateShardCount cannot scale up over double your current open shard count. Current open shard count: 1 Target shard count: 4 `
+   * Refer to the API for more details and limitations: https://docs.aws.amazon.com/kinesis/latest/APIReference/API_UpdateShardCount.html
+   * Defaults to 1 if unspecified. Should be greater than 0.
+   * @default 1
+   *
+   */
+  readonly shardCount?: number;
+  /**
+   * @remarks
+   * The number of hours for the data records that are stored in shards to remain accessible. The default value is 24. For more information about the stream retention period, see Changing the Data Retention Period in the Amazon Kinesis Developer Guide.
+   * @link https://docs.aws.amazon.com/streams/latest/dev/kinesis-extended-retention.html
+   *
+   * The value should be between 24 and 8760
+   * @default 24
+   */
+  readonly retention?: number;
 }
 
 /**
@@ -1201,6 +1384,24 @@ export interface ICloudWatchLogsConfig {
    *
    */
   readonly dynamicPartitioning?: t.NonEmptyString;
+  /**
+   * Declaration of Dynamic Partitioning for Kinesis Firehose by Account ID.
+   *
+   * @remarks
+   * Kinesis firehose Dynamic Partition by Account ID will add the Account ID that produced the CloudWatch Logs to the partitioning strategy of logs. For example: `s3://<central-logs-bucket>/CloudWatchLogs/<account id>/`
+   *
+   * If dynamicPartitioning is also being used the Account ID partition will come before the supplied s3 prefix. For example a dynamicPartitioning file with the format
+   *  ```
+   * { "logGroupPattern": "LogGroupName", "s3Prefix": "s3-prefix" }
+   * ```
+   * The resulting partitioning strategy would be `s3://<central-logs-bucket>/CloudWatchLogs/<account id>/s3-prefix/`
+   *
+   *  For more information on Kinesis Firehose dynamic partitioning limits please refer to::
+   * https://docs.aws.amazon.com/firehose/latest/dev/limits.html
+   *
+   *
+   */
+  readonly dynamicPartitioningByAccountId?: boolean;
   /**
    * Enable or disable CloudWatch replication
    */
@@ -1968,6 +2169,31 @@ export interface ILambdaConfig {
 }
 
 /**
+ * *{@link GlobalConfig} / {@link sqsConfig}*
+ *
+ * @description
+ * SQS Queue configuration settings
+ *
+ * @example
+ * ```
+ *   encryption:
+ *    useCMK: true
+ *    deploymentTargets:
+ *      organizationalUnits:
+ *        - Root
+ * ```
+ */
+export interface ISqsConfig {
+  /**
+   * Encryption setting for AWS Lambda environment variables.
+   *
+   * @remarks
+   *  For more information please refer {@link ServiceEncryptionConfig}
+   */
+  readonly encryption?: IServiceEncryptionConfig;
+}
+
+/**
  * *{@link GlobalConfig} / {@link SsmInventoryConfig}*
  *
  * @description
@@ -2067,27 +2293,15 @@ export interface ISsmParameterConfig {
  * @example
  * ```
  * defaultEventBus:
- *   applyDefaultEventBusPolicy: true
- *   eventBusResourcePolicyAttachments:
- *     - policy: path-to-my-policy
+ *   policy: path-to-my-policy
  * ```
  *
  */
 export interface IDefaultEventBusConfig {
   /**
-   * Apply the default Event Bus resource-based policy.
+   * Resource-based policy definition json file. This file must be present in config repository
    */
-  readonly applyDefaultEventBusPolicy?: boolean;
-  /**
-   * JSON policy files.
-   *
-   * @remarks
-   * Policy statements from these files will be applied to the default event bus policy. This will overwrite any existing policies in place.
-   *
-   * Note: Please be aware that overly restrictive custom policies may interfere with standard LZA operations.
-   * This property cannot be used in conjunction with the `applyDefaultEventBusPolicy` being set to `true`.
-   */
-  readonly customPolicyOverride?: t.ICustomEventBusResourcePolicyOverrideConfig | undefined;
+  readonly policy: t.NonEmptyString;
 
   /**
    * Default Event Bus Policy deployment targets.
@@ -2454,18 +2668,13 @@ export interface IGlobalConfig {
   /**
    * Configuration for the Default Event Bus
    *
-   * When not providing this configuration, the default event bus policy is not provided by LZA.
-   * If the `applyDefaultEventBusPolicy` is set to `true`, LZA will create a default event bus policy
-   * that prevents publishing events as well as enabling and disabling rules on the default event bridge.
-   * If end-users provide a custom policy, via the `customPolicyOverrides` property, LZA will apply the
-   * custom policy to the default event bus policy, which will overwrite any existing policy.
+   * End-users provide a custom policy, via the `policy` property, LZA will apply the
+   * custom policy to the default event bus policy.
    *
    * @example
    * ```
    * defaultEventBus:
-   *   applyDefaultEventBusPolicy: false
-   *   customPolicyOverrides:
-   *     - policy: path-to-my-policy.json
+   *   policy: path-to-my-policy.json
    *   deploymentTargets:
    *     accounts:
    *       - Management

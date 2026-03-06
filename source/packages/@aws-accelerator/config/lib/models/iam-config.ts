@@ -314,6 +314,12 @@ export interface IIdentityCenterPermissionSetConfig {
    * @default undefined
    */
   readonly sessionDuration?: number;
+
+  /**
+   * A description string for the Permission Set
+   * @default undefined
+   */
+  readonly description?: t.NonEmptyString;
 }
 
 /**
@@ -706,7 +712,7 @@ export interface IIdentityCenterAssignmentConfig {
  *            name: AcceleratorManagedPolicy
  *            path: /
  *          awsManagedPolicyName: PowerUserAccess
- *       sessionDuration: 60
+ *      sessionDuration: 60
  *  identityCenterAssignments:
  *   - name: Assignment1
  *     permissionSetName: PermissionSet1

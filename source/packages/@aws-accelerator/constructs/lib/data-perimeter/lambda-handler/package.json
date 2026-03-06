@@ -9,7 +9,7 @@
     "url": "https://aws.amazon.com/solutions"
   },
   "scripts": {
-    "build": "esbuild --minify --bundle --outfile=./dist/detect-resource-policy.js --platform=node --target=node18 ./src/detect-resource-policy/index.ts && esbuild --minify --bundle --outfile=./dist/remediate-resource-policy.js --platform=node --target=node18 ./src/remediate-resource-policy/index.ts",
+    "build": "esbuild --minify --bundle --outfile=./dist/detect-resource-policy.js --platform=node ./src/detect-resource-policy/index.ts && esbuild --minify --bundle --outfile=./dist/remediate-resource-policy.js --platform=node ./src/remediate-resource-policy/index.ts",
     "cleanup": "tsc --build ./ --clean && rm -rf node_modules && rm -rf dist && rm -rf cdk.out",
     "cleanup:tsc": "tsc --build ./ --clean",
     "lint": "eslint --fix  --max-warnings 0 -c ../../../../../../.eslintrc.json '**/*.{ts,tsx}' --ignore-pattern \"*.d.ts\" ",
@@ -36,7 +36,7 @@
     "@aws-sdk/client-sqs": "3.637.0",
     "@types/jest": "29.5.12",
     "@types/node": "18.14.0",
-    "esbuild": "0.24.0",
+    "esbuild": "0.25.0",
     "eslint": "8.34.0",
     "eslint-config-prettier": "8.6.0",
     "eslint-config-standard": "17.0.0",

@@ -306,7 +306,7 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 1`] = `
                 ],
                 "RoleArn": {
                   "Fn::GetAtt": [
-                    "PipelineSourceCodePipelineActionRoleBBC58FD5",
+                    "PipelinePipelineRole6D983AD5",
                     "Arn",
                   ],
                 },
@@ -338,7 +338,7 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 1`] = `
                 ],
                 "RoleArn": {
                   "Fn::GetAtt": [
-                    "PipelineSourceConfigurationCodePipelineActionRoleA2807B19",
+                    "PipelinePipelineRole6D983AD5",
                     "Arn",
                   ],
                 },
@@ -981,8 +981,19 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 1`] = `
                 "Configuration": {
                   "CustomData": "
               Changes for this execution can be found in accelerator pipeline S3 bucket under Diffs/#{codepipeline.PipelineExecutionId}. 
-              Use cli command for download: "aws s3 sync s3://aws-accelerator-pipeline-000000000000-us-east-1/AWSAccelerator-Pipel/Diffs/#{codepipeline.PipelineExecutionId} diffs" or follow the link bellow.",
-                  "ExternalEntityLink": "https://us-east-1.console.aws.amazon.com/s3/buckets/aws-accelerator-pipeline-000000000000-us-east-1?prefix=AWSAccelerator-Pipel/Diffs/#{codepipeline.PipelineExecutionId}/&region=us-east-1&bucketType=general",
+              Use cli command for download: "aws s3 sync s3://aws-accelerator-pipeline-000000000000-us-east-1/AWSAccelerator-Pipel/Diffs/#{codepipeline.PipelineExecutionId} diffs" or follow the link below.",
+                  "ExternalEntityLink": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "https://us-east-1.console.aws.amazon.com/s3/buckets/",
+                        {
+                          "Ref": "PipelineSecureBucketB3EEB324",
+                        },
+                        "?prefix=AWSAccelerator-Pipel/Diffs/#{codepipeline.PipelineExecutionId}/&region=us-east-1&bucketType=general",
+                      ],
+                    ],
+                  },
                   "NotificationArn": {
                     "Ref": "PipelineManualApprovalActionTopicB55612D2",
                   },
@@ -990,7 +1001,7 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 1`] = `
                 "Name": "Approve",
                 "RoleArn": {
                   "Fn::GetAtt": [
-                    "PipelineReviewApproveCodePipelineActionRole3122ED42",
+                    "PipelinePipelineRole6D983AD5",
                     "Arn",
                   ],
                 },
@@ -1487,7 +1498,7 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 1`] = `
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1563,6 +1574,7 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 1`] = `
               "Action": [
                 "iam:CreateServiceLinkedRole",
                 "iam:GetRole",
+                "lambda:GetFunction",
               ],
               "Effect": "Allow",
               "Resource": "*",
@@ -2323,27 +2335,45 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 1`] = `
               "Effect": "Allow",
               "Resource": {
                 "Fn::GetAtt": [
-                  "PipelineSourceCodePipelineActionRoleBBC58FD5",
-                  "Arn",
-                ],
-              },
-            },
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "PipelineSourceConfigurationCodePipelineActionRoleA2807B19",
-                  "Arn",
-                ],
-              },
-            },
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
                   "PipelinePipelineRole6D983AD5",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "codecommit:GetBranch",
+                "codecommit:GetCommit",
+                "codecommit:UploadArchive",
+                "codecommit:GetUploadArchiveStatus",
+                "codecommit:CancelUploadArchive",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":codecommit:us-east-1:000000000000:accelerator-source",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": [
+                "codecommit:GetBranch",
+                "codecommit:GetCommit",
+                "codecommit:UploadArchive",
+                "codecommit:GetUploadArchiveStatus",
+                "codecommit:CancelUploadArchive",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "PipelineConfigRepositoryE5225086",
                   "Arn",
                 ],
               },
@@ -2377,13 +2407,10 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 1`] = `
               },
             },
             {
-              "Action": "sts:AssumeRole",
+              "Action": "sns:Publish",
               "Effect": "Allow",
               "Resource": {
-                "Fn::GetAtt": [
-                  "PipelineReviewApproveCodePipelineActionRole3122ED42",
-                  "Arn",
-                ],
+                "Ref": "PipelineManualApprovalActionTopicB55612D2",
               },
             },
             {
@@ -2407,77 +2434,6 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 1`] = `
         "Roles": [
           {
             "Ref": "PipelinePipelineRole6D983AD5",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-    },
-    "PipelineReviewApproveCodePipelineActionRole3122ED42": {
-      "DependsOn": [
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionB3FFD974",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleDefaultPolicy28F66406",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleD177D2D7",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionLogGroup28940852",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEvent8BAA45B0",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRoleDefaultPolicyD8319C53",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRole4961EAEB",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleResource12D935F1",
-      ],
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition",
-                      },
-                      ":iam::000000000000:root",
-                    ],
-                  ],
-                },
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-      },
-      "Type": "AWS::IAM::Role",
-    },
-    "PipelineReviewApproveCodePipelineActionRoleDefaultPolicyD445B059": {
-      "DependsOn": [
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionB3FFD974",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleDefaultPolicy28F66406",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleD177D2D7",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionLogGroup28940852",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEvent8BAA45B0",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRoleDefaultPolicyD8319C53",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRole4961EAEB",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleResource12D935F1",
-      ],
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sns:Publish",
-              "Effect": "Allow",
-              "Resource": {
-                "Ref": "PipelineManualApprovalActionTopicB55612D2",
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "PipelineReviewApproveCodePipelineActionRoleDefaultPolicyD445B059",
-        "Roles": [
-          {
-            "Ref": "PipelineReviewApproveCodePipelineActionRole3122ED42",
           },
         ],
       },
@@ -2599,292 +2555,6 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 1`] = `
         },
       },
       "Type": "AWS::S3::BucketPolicy",
-    },
-    "PipelineSourceCodePipelineActionRoleBBC58FD5": {
-      "DependsOn": [
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionB3FFD974",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleDefaultPolicy28F66406",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleD177D2D7",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionLogGroup28940852",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEvent8BAA45B0",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRoleDefaultPolicyD8319C53",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRole4961EAEB",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleResource12D935F1",
-      ],
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition",
-                      },
-                      ":iam::000000000000:root",
-                    ],
-                  ],
-                },
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-      },
-      "Type": "AWS::IAM::Role",
-    },
-    "PipelineSourceCodePipelineActionRoleDefaultPolicy5FD830BF": {
-      "DependsOn": [
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionB3FFD974",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleDefaultPolicy28F66406",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleD177D2D7",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionLogGroup28940852",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEvent8BAA45B0",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRoleDefaultPolicyD8319C53",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRole4961EAEB",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleResource12D935F1",
-      ],
-      "Metadata": {
-        "cdk_nag": {
-          "rules_to_suppress": [
-            {
-              "id": "AwsSolutions-IAM5",
-              "reason": "IAM role requires wildcard permissions.",
-            },
-          ],
-        },
-      },
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "s3:GetObject*",
-                "s3:GetBucket*",
-                "s3:List*",
-                "s3:DeleteObject*",
-                "s3:PutObject",
-                "s3:PutObjectLegalHold",
-                "s3:PutObjectRetention",
-                "s3:PutObjectTagging",
-                "s3:PutObjectVersionTagging",
-                "s3:Abort*",
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::GetAtt": [
-                    "PipelineSecureBucketB3EEB324",
-                    "Arn",
-                  ],
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Fn::GetAtt": [
-                          "PipelineSecureBucketB3EEB324",
-                          "Arn",
-                        ],
-                      },
-                      "/*",
-                    ],
-                  ],
-                },
-              ],
-            },
-            {
-              "Action": [
-                "kms:Decrypt",
-                "kms:DescribeKey",
-                "kms:Encrypt",
-                "kms:ReEncrypt*",
-                "kms:GenerateDataKey*",
-              ],
-              "Effect": "Allow",
-              "Resource": {
-                "Ref": "SsmParameterValueacceleratorawsacceleratorinstallerkmskeyarnC96584B6F00A464EAD1953AFF4B05118Parameter",
-              },
-            },
-            {
-              "Action": [
-                "codecommit:GetBranch",
-                "codecommit:GetCommit",
-                "codecommit:UploadArchive",
-                "codecommit:GetUploadArchiveStatus",
-                "codecommit:CancelUploadArchive",
-              ],
-              "Effect": "Allow",
-              "Resource": {
-                "Fn::Join": [
-                  "",
-                  [
-                    "arn:",
-                    {
-                      "Ref": "AWS::Partition",
-                    },
-                    ":codecommit:us-east-1:000000000000:accelerator-source",
-                  ],
-                ],
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "PipelineSourceCodePipelineActionRoleDefaultPolicy5FD830BF",
-        "Roles": [
-          {
-            "Ref": "PipelineSourceCodePipelineActionRoleBBC58FD5",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-    },
-    "PipelineSourceConfigurationCodePipelineActionRoleA2807B19": {
-      "DependsOn": [
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionB3FFD974",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleDefaultPolicy28F66406",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleD177D2D7",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionLogGroup28940852",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEvent8BAA45B0",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRoleDefaultPolicyD8319C53",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRole4961EAEB",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleResource12D935F1",
-      ],
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition",
-                      },
-                      ":iam::000000000000:root",
-                    ],
-                  ],
-                },
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-      },
-      "Type": "AWS::IAM::Role",
-    },
-    "PipelineSourceConfigurationCodePipelineActionRoleDefaultPolicy5FE1A228": {
-      "DependsOn": [
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionB3FFD974",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleDefaultPolicy28F66406",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleD177D2D7",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionLogGroup28940852",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEvent8BAA45B0",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRoleDefaultPolicyD8319C53",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRole4961EAEB",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleResource12D935F1",
-      ],
-      "Metadata": {
-        "cdk_nag": {
-          "rules_to_suppress": [
-            {
-              "id": "AwsSolutions-IAM5",
-              "reason": "IAM role requires wildcard permissions.",
-            },
-          ],
-        },
-      },
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "s3:GetObject*",
-                "s3:GetBucket*",
-                "s3:List*",
-                "s3:DeleteObject*",
-                "s3:PutObject",
-                "s3:PutObjectLegalHold",
-                "s3:PutObjectRetention",
-                "s3:PutObjectTagging",
-                "s3:PutObjectVersionTagging",
-                "s3:Abort*",
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::GetAtt": [
-                    "PipelineSecureBucketB3EEB324",
-                    "Arn",
-                  ],
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Fn::GetAtt": [
-                          "PipelineSecureBucketB3EEB324",
-                          "Arn",
-                        ],
-                      },
-                      "/*",
-                    ],
-                  ],
-                },
-              ],
-            },
-            {
-              "Action": [
-                "kms:Decrypt",
-                "kms:DescribeKey",
-                "kms:Encrypt",
-                "kms:ReEncrypt*",
-                "kms:GenerateDataKey*",
-              ],
-              "Effect": "Allow",
-              "Resource": {
-                "Ref": "SsmParameterValueacceleratorawsacceleratorinstallerkmskeyarnC96584B6F00A464EAD1953AFF4B05118Parameter",
-              },
-            },
-            {
-              "Action": [
-                "codecommit:GetBranch",
-                "codecommit:GetCommit",
-                "codecommit:UploadArchive",
-                "codecommit:GetUploadArchiveStatus",
-                "codecommit:CancelUploadArchive",
-              ],
-              "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "PipelineConfigRepositoryE5225086",
-                  "Arn",
-                ],
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "PipelineSourceConfigurationCodePipelineActionRoleDefaultPolicy5FE1A228",
-        "Roles": [
-          {
-            "Ref": "PipelineSourceConfigurationCodePipelineActionRoleA2807B19",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
     },
     "PipelineToolkitProjectBCBD6910": {
       "Metadata": {
@@ -3018,6 +2688,21 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 1`] = `
               "Type": "PLAINTEXT",
               "Value": "Yes",
             },
+            {
+              "Name": "USE_EXISTING_CONFIG_REPO",
+              "Type": "PLAINTEXT",
+              "Value": "No",
+            },
+            {
+              "Name": "EXISTING_CONFIG_REPOSITORY_NAME",
+              "Type": "PLAINTEXT",
+              "Value": "aws-accelerator-config",
+            },
+            {
+              "Name": "EXISTING_CONFIG_REPOSITORY_BRANCH_NAME",
+              "Type": "PLAINTEXT",
+              "Value": "main",
+            },
           ],
           "Image": "aws/codebuild/standard:7.0",
           "ImagePullCredentialsType": "CODEBUILD",
@@ -3040,7 +2725,7 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 1`] = `
 phases:
   install:
     runtime-versions:
-      nodejs: 18
+      nodejs: 20
   pre_build:
     commands:
       - "export WORK_DIR=source/packages/@aws-accelerator/accelerator
@@ -3060,11 +2745,17 @@ phases:
                 {
                   "Ref": "AWS::Partition",
                 },
-                " --use-existing-role No --config-dir $CODEBUILD_SRC_DIR_Config && if [ -z "\${ACCELERATOR_NO_ORG_MODULE}" ]; then LOG_LEVEL=info yarn run ts-node ../lza-modules/bin/runner.ts --module aws-organizations --partition  ",
+                " --use-existing-role No --config-dir $CODEBUILD_SRC_DIR_Config; fi
+      - if [ "prepare" = "\${ACCELERATOR_STAGE}" ] && [ -z "\${ACCELERATOR_NO_ORG_MODULE}" ]; then set -e && LOG_LEVEL=info && yarn run ts-node ../lza-modules/bin/runner.ts --module aws-organizations --partition  ",
                 {
                   "Ref": "AWS::Partition",
                 },
-                " --use-existing-role No --config-dir $CODEBUILD_SRC_DIR_Config; else echo "Module aws-organizations execution skipped by environment settings."; fi ; fi
+                " --use-existing-role No --config-dir $CODEBUILD_SRC_DIR_Config; else echo "Module aws-organizations execution skipped by environment settings."; fi
+      - if [ "prepare" = "\${ACCELERATOR_STAGE}" ]; then set -e && LOG_LEVEL=info && yarn run ts-node ../lza-modules/bin/runner.ts --module account-alias --partition  ",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                " --use-existing-role No --config-dir $CODEBUILD_SRC_DIR_Config; fi
       - if [ "prepare" = "\${ACCELERATOR_STAGE}" ]; then set -e && yarn run ts-node  ./lib/prerequisites.ts --config-dir $CODEBUILD_SRC_DIR_Config --partition ",
                 {
                   "Ref": "AWS::Partition",
@@ -3171,7 +2862,7 @@ artifacts:
       "Properties": {
         "Name": "/accelerator/PipelineStack/version",
         "Type": "String",
-        "Value": "1.11.0",
+        "Value": "1.12.2",
       },
       "Type": "AWS::SSM::Parameter",
     },
@@ -3495,7 +3186,7 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 2`] = `
                 ],
                 "RoleArn": {
                   "Fn::GetAtt": [
-                    "PipelineSourceCodePipelineActionRoleBBC58FD5",
+                    "PipelinePipelineRole6D983AD5",
                     "Arn",
                   ],
                 },
@@ -3527,7 +3218,7 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 2`] = `
                 ],
                 "RoleArn": {
                   "Fn::GetAtt": [
-                    "PipelineSourceConfigurationCodePipelineActionRoleA2807B19",
+                    "PipelinePipelineRole6D983AD5",
                     "Arn",
                   ],
                 },
@@ -4170,8 +3861,19 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 2`] = `
                 "Configuration": {
                   "CustomData": "
               Changes for this execution can be found in accelerator pipeline S3 bucket under Diffs/#{codepipeline.PipelineExecutionId}. 
-              Use cli command for download: "aws s3 sync s3://aws-accelerator-pipeline-000000000000-us-east-1/AWSAccelerator-Pipel/Diffs/#{codepipeline.PipelineExecutionId} diffs" or follow the link bellow.",
-                  "ExternalEntityLink": "https://us-east-1.console.aws.amazon.com/s3/buckets/aws-accelerator-pipeline-000000000000-us-east-1?prefix=AWSAccelerator-Pipel/Diffs/#{codepipeline.PipelineExecutionId}/&region=us-east-1&bucketType=general",
+              Use cli command for download: "aws s3 sync s3://aws-accelerator-pipeline-000000000000-us-east-1/AWSAccelerator-Pipel/Diffs/#{codepipeline.PipelineExecutionId} diffs" or follow the link below.",
+                  "ExternalEntityLink": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "https://us-east-1.console.aws.amazon.com/s3/buckets/",
+                        {
+                          "Ref": "PipelineSecureBucketB3EEB324",
+                        },
+                        "?prefix=AWSAccelerator-Pipel/Diffs/#{codepipeline.PipelineExecutionId}/&region=us-east-1&bucketType=general",
+                      ],
+                    ],
+                  },
                   "NotificationArn": {
                     "Ref": "PipelineManualApprovalActionTopicB55612D2",
                   },
@@ -4179,7 +3881,7 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 2`] = `
                 "Name": "Approve",
                 "RoleArn": {
                   "Fn::GetAtt": [
-                    "PipelineReviewApproveCodePipelineActionRole3122ED42",
+                    "PipelinePipelineRole6D983AD5",
                     "Arn",
                   ],
                 },
@@ -5000,7 +4702,7 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 2`] = `
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -5076,6 +4778,7 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 2`] = `
               "Action": [
                 "iam:CreateServiceLinkedRole",
                 "iam:GetRole",
+                "lambda:GetFunction",
               ],
               "Effect": "Allow",
               "Resource": "*",
@@ -5978,27 +5681,45 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 2`] = `
               "Effect": "Allow",
               "Resource": {
                 "Fn::GetAtt": [
-                  "PipelineSourceCodePipelineActionRoleBBC58FD5",
-                  "Arn",
-                ],
-              },
-            },
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "PipelineSourceConfigurationCodePipelineActionRoleA2807B19",
-                  "Arn",
-                ],
-              },
-            },
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
                   "PipelinePipelineRole6D983AD5",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "codecommit:GetBranch",
+                "codecommit:GetCommit",
+                "codecommit:UploadArchive",
+                "codecommit:GetUploadArchiveStatus",
+                "codecommit:CancelUploadArchive",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":codecommit:us-east-1:000000000000:accelerator-source",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": [
+                "codecommit:GetBranch",
+                "codecommit:GetCommit",
+                "codecommit:UploadArchive",
+                "codecommit:GetUploadArchiveStatus",
+                "codecommit:CancelUploadArchive",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "PipelineConfigRepositoryE5225086",
                   "Arn",
                 ],
               },
@@ -6032,13 +5753,10 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 2`] = `
               },
             },
             {
-              "Action": "sts:AssumeRole",
+              "Action": "sns:Publish",
               "Effect": "Allow",
               "Resource": {
-                "Fn::GetAtt": [
-                  "PipelineReviewApproveCodePipelineActionRole3122ED42",
-                  "Arn",
-                ],
+                "Ref": "PipelineManualApprovalActionTopicB55612D2",
               },
             },
             {
@@ -6082,77 +5800,6 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 2`] = `
         "Roles": [
           {
             "Ref": "PipelinePipelineRole6D983AD5",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-    },
-    "PipelineReviewApproveCodePipelineActionRole3122ED42": {
-      "DependsOn": [
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionB3FFD974",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleDefaultPolicy28F66406",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleD177D2D7",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionLogGroup28940852",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEvent8BAA45B0",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRoleDefaultPolicyD8319C53",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRole4961EAEB",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleResource12D935F1",
-      ],
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition",
-                      },
-                      ":iam::000000000000:root",
-                    ],
-                  ],
-                },
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-      },
-      "Type": "AWS::IAM::Role",
-    },
-    "PipelineReviewApproveCodePipelineActionRoleDefaultPolicyD445B059": {
-      "DependsOn": [
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionB3FFD974",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleDefaultPolicy28F66406",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleD177D2D7",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionLogGroup28940852",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEvent8BAA45B0",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRoleDefaultPolicyD8319C53",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRole4961EAEB",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleResource12D935F1",
-      ],
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sns:Publish",
-              "Effect": "Allow",
-              "Resource": {
-                "Ref": "PipelineManualApprovalActionTopicB55612D2",
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "PipelineReviewApproveCodePipelineActionRoleDefaultPolicyD445B059",
-        "Roles": [
-          {
-            "Ref": "PipelineReviewApproveCodePipelineActionRole3122ED42",
           },
         ],
       },
@@ -6274,292 +5921,6 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 2`] = `
         },
       },
       "Type": "AWS::S3::BucketPolicy",
-    },
-    "PipelineSourceCodePipelineActionRoleBBC58FD5": {
-      "DependsOn": [
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionB3FFD974",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleDefaultPolicy28F66406",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleD177D2D7",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionLogGroup28940852",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEvent8BAA45B0",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRoleDefaultPolicyD8319C53",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRole4961EAEB",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleResource12D935F1",
-      ],
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition",
-                      },
-                      ":iam::000000000000:root",
-                    ],
-                  ],
-                },
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-      },
-      "Type": "AWS::IAM::Role",
-    },
-    "PipelineSourceCodePipelineActionRoleDefaultPolicy5FD830BF": {
-      "DependsOn": [
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionB3FFD974",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleDefaultPolicy28F66406",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleD177D2D7",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionLogGroup28940852",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEvent8BAA45B0",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRoleDefaultPolicyD8319C53",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRole4961EAEB",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleResource12D935F1",
-      ],
-      "Metadata": {
-        "cdk_nag": {
-          "rules_to_suppress": [
-            {
-              "id": "AwsSolutions-IAM5",
-              "reason": "IAM role requires wildcard permissions.",
-            },
-          ],
-        },
-      },
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "s3:GetObject*",
-                "s3:GetBucket*",
-                "s3:List*",
-                "s3:DeleteObject*",
-                "s3:PutObject",
-                "s3:PutObjectLegalHold",
-                "s3:PutObjectRetention",
-                "s3:PutObjectTagging",
-                "s3:PutObjectVersionTagging",
-                "s3:Abort*",
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::GetAtt": [
-                    "PipelineSecureBucketB3EEB324",
-                    "Arn",
-                  ],
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Fn::GetAtt": [
-                          "PipelineSecureBucketB3EEB324",
-                          "Arn",
-                        ],
-                      },
-                      "/*",
-                    ],
-                  ],
-                },
-              ],
-            },
-            {
-              "Action": [
-                "kms:Decrypt",
-                "kms:DescribeKey",
-                "kms:Encrypt",
-                "kms:ReEncrypt*",
-                "kms:GenerateDataKey*",
-              ],
-              "Effect": "Allow",
-              "Resource": {
-                "Ref": "SsmParameterValueacceleratorawsacceleratorinstallerkmskeyarnC96584B6F00A464EAD1953AFF4B05118Parameter",
-              },
-            },
-            {
-              "Action": [
-                "codecommit:GetBranch",
-                "codecommit:GetCommit",
-                "codecommit:UploadArchive",
-                "codecommit:GetUploadArchiveStatus",
-                "codecommit:CancelUploadArchive",
-              ],
-              "Effect": "Allow",
-              "Resource": {
-                "Fn::Join": [
-                  "",
-                  [
-                    "arn:",
-                    {
-                      "Ref": "AWS::Partition",
-                    },
-                    ":codecommit:us-east-1:000000000000:accelerator-source",
-                  ],
-                ],
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "PipelineSourceCodePipelineActionRoleDefaultPolicy5FD830BF",
-        "Roles": [
-          {
-            "Ref": "PipelineSourceCodePipelineActionRoleBBC58FD5",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-    },
-    "PipelineSourceConfigurationCodePipelineActionRoleA2807B19": {
-      "DependsOn": [
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionB3FFD974",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleDefaultPolicy28F66406",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleD177D2D7",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionLogGroup28940852",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEvent8BAA45B0",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRoleDefaultPolicyD8319C53",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRole4961EAEB",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleResource12D935F1",
-      ],
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition",
-                      },
-                      ":iam::000000000000:root",
-                    ],
-                  ],
-                },
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-      },
-      "Type": "AWS::IAM::Role",
-    },
-    "PipelineSourceConfigurationCodePipelineActionRoleDefaultPolicy5FE1A228": {
-      "DependsOn": [
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionB3FFD974",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleDefaultPolicy28F66406",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionServiceRoleD177D2D7",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleFunctionLogGroup28940852",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEvent8BAA45B0",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRoleDefaultPolicyD8319C53",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleProviderframeworkonEventServiceRole4961EAEB",
-        "PipelineAWSServiceRoleForCodeStarNotificationsCreateServiceLinkedRoleResource12D935F1",
-      ],
-      "Metadata": {
-        "cdk_nag": {
-          "rules_to_suppress": [
-            {
-              "id": "AwsSolutions-IAM5",
-              "reason": "IAM role requires wildcard permissions.",
-            },
-          ],
-        },
-      },
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "s3:GetObject*",
-                "s3:GetBucket*",
-                "s3:List*",
-                "s3:DeleteObject*",
-                "s3:PutObject",
-                "s3:PutObjectLegalHold",
-                "s3:PutObjectRetention",
-                "s3:PutObjectTagging",
-                "s3:PutObjectVersionTagging",
-                "s3:Abort*",
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::GetAtt": [
-                    "PipelineSecureBucketB3EEB324",
-                    "Arn",
-                  ],
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Fn::GetAtt": [
-                          "PipelineSecureBucketB3EEB324",
-                          "Arn",
-                        ],
-                      },
-                      "/*",
-                    ],
-                  ],
-                },
-              ],
-            },
-            {
-              "Action": [
-                "kms:Decrypt",
-                "kms:DescribeKey",
-                "kms:Encrypt",
-                "kms:ReEncrypt*",
-                "kms:GenerateDataKey*",
-              ],
-              "Effect": "Allow",
-              "Resource": {
-                "Ref": "SsmParameterValueacceleratorawsacceleratorinstallerkmskeyarnC96584B6F00A464EAD1953AFF4B05118Parameter",
-              },
-            },
-            {
-              "Action": [
-                "codecommit:GetBranch",
-                "codecommit:GetCommit",
-                "codecommit:UploadArchive",
-                "codecommit:GetUploadArchiveStatus",
-                "codecommit:CancelUploadArchive",
-              ],
-              "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "PipelineConfigRepositoryE5225086",
-                  "Arn",
-                ],
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "PipelineSourceConfigurationCodePipelineActionRoleDefaultPolicy5FE1A228",
-        "Roles": [
-          {
-            "Ref": "PipelineSourceConfigurationCodePipelineActionRoleA2807B19",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
     },
     "PipelineToolkitProjectBCBD6910": {
       "Metadata": {
@@ -6693,6 +6054,21 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 2`] = `
               "Type": "PLAINTEXT",
               "Value": "Yes",
             },
+            {
+              "Name": "USE_EXISTING_CONFIG_REPO",
+              "Type": "PLAINTEXT",
+              "Value": "No",
+            },
+            {
+              "Name": "EXISTING_CONFIG_REPOSITORY_NAME",
+              "Type": "PLAINTEXT",
+              "Value": "aws-accelerator-config",
+            },
+            {
+              "Name": "EXISTING_CONFIG_REPOSITORY_BRANCH_NAME",
+              "Type": "PLAINTEXT",
+              "Value": "main",
+            },
           ],
           "Image": "aws/codebuild/standard:7.0",
           "ImagePullCredentialsType": "CODEBUILD",
@@ -6715,7 +6091,7 @@ exports[`PipelineStack Construct(PipelineStack):  Snapshot Test 2`] = `
 phases:
   install:
     runtime-versions:
-      nodejs: 18
+      nodejs: 20
   pre_build:
     commands:
       - "export WORK_DIR=source/packages/@aws-accelerator/accelerator
@@ -6735,11 +6111,17 @@ phases:
                 {
                   "Ref": "AWS::Partition",
                 },
-                " --use-existing-role No --config-dir $CODEBUILD_SRC_DIR_Config && if [ -z "\${ACCELERATOR_NO_ORG_MODULE}" ]; then LOG_LEVEL=info yarn run ts-node ../lza-modules/bin/runner.ts --module aws-organizations --partition  ",
+                " --use-existing-role No --config-dir $CODEBUILD_SRC_DIR_Config; fi
+      - if [ "prepare" = "\${ACCELERATOR_STAGE}" ] && [ -z "\${ACCELERATOR_NO_ORG_MODULE}" ]; then set -e && LOG_LEVEL=info && yarn run ts-node ../lza-modules/bin/runner.ts --module aws-organizations --partition  ",
                 {
                   "Ref": "AWS::Partition",
                 },
-                " --use-existing-role No --config-dir $CODEBUILD_SRC_DIR_Config; else echo "Module aws-organizations execution skipped by environment settings."; fi ; fi
+                " --use-existing-role No --config-dir $CODEBUILD_SRC_DIR_Config; else echo "Module aws-organizations execution skipped by environment settings."; fi
+      - if [ "prepare" = "\${ACCELERATOR_STAGE}" ]; then set -e && LOG_LEVEL=info && yarn run ts-node ../lza-modules/bin/runner.ts --module account-alias --partition  ",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                " --use-existing-role No --config-dir $CODEBUILD_SRC_DIR_Config; fi
       - if [ "prepare" = "\${ACCELERATOR_STAGE}" ]; then set -e && yarn run ts-node  ./lib/prerequisites.ts --config-dir $CODEBUILD_SRC_DIR_Config --partition ",
                 {
                   "Ref": "AWS::Partition",
@@ -6846,7 +6228,7 @@ artifacts:
       "Properties": {
         "Name": "/accelerator/PipelineStackRegionalDeploy/version",
         "Type": "String",
-        "Value": "1.11.0",
+        "Value": "1.12.2",
       },
       "Type": "AWS::SSM::Parameter",
     },

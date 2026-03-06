@@ -17,6 +17,7 @@ import * as path from 'path';
 import * as AWS from 'aws-sdk';
 import { AssumeRoleCommandOutput } from '@aws-sdk/client-sts';
 import { SSMClient, GetParametersByPathCommand } from '@aws-sdk/client-ssm';
+import { StreamMode } from '@aws-sdk/client-kinesis';
 
 import { createLogger } from '@aws-accelerator/utils/lib/logger';
 import { throttlingBackOff } from '@aws-accelerator/utils/lib/throttle';
@@ -53,6 +54,10 @@ export class centralizeCdkBucketsConfig implements i.ICentralizeCdkBucketsConfig
   readonly enable = true;
 }
 
+export class StackRefactor implements i.IStackRefactor {
+  readonly networkVpcStack: boolean = false;
+}
+
 export class cdkOptionsConfig implements i.ICdkOptionsConfig {
   readonly centralizeBuckets = true;
   readonly useManagementAccessRole = true;
@@ -62,6 +67,7 @@ export class cdkOptionsConfig implements i.ICdkOptionsConfig {
    * Determines if the LZA pipeline will skip the static config validation step during the pipeline's Build phase. This can be helpful in cases where the config-validator incorrectly throws errors for a valid configuration.
    */
   readonly skipStaticValidation = undefined;
+  readonly stackRefactor: StackRefactor | undefined = undefined;
 }
 
 export class CloudTrailSettingsConfig implements i.ICloudTrailSettingsConfig {
@@ -342,6 +348,10 @@ export class LambdaConfig implements i.ILambdaConfig {
   readonly encryption: ServiceEncryptionConfig | undefined = undefined;
 }
 
+export class SqsConfig implements i.ISqsConfig {
+  readonly encryption: ServiceEncryptionConfig | undefined = undefined;
+}
+
 export class CloudTrailConfig implements i.ICloudTrailConfig {
   readonly enable = false;
   readonly organizationTrail = false;
@@ -406,18 +416,39 @@ export class CloudWatchLogsExclusionConfig implements i.ICloudWatchLogsExclusion
   readonly logGroupNames: string[] | undefined = undefined;
 }
 
+export class CloudWatchFirehoseLamdaProcessorConfig implements i.ICloudWatchFirehoseLambdaProcessorConfig {
+  readonly retries: number | undefined = undefined;
+  readonly bufferInterval: number | undefined = undefined;
+  readonly bufferSize: number | undefined = undefined;
+}
 export class CloudWatchFirehoseConfig implements i.ICloudWatchFirehoseConfig {
   readonly fileExtension: string | undefined = undefined;
+  readonly lambdaProcessor?: CloudWatchFirehoseLamdaProcessorConfig | undefined = undefined;
+}
+
+export class CloudWatchKinesisConfig implements i.ICloudWatchKinesisConfig {
+  readonly streamingMode: StreamMode = StreamMode.PROVISIONED;
+  readonly shardCount: number | undefined = undefined;
+  readonly retention: number | undefined = undefined;
+}
+export class CloudWatchSubscriptionConfig implements i.ICloudWatchSubscriptionConfig {
+  readonly type: 'ACCOUNT' | 'LOG_GROUP' = 'LOG_GROUP';
+  readonly selectionCriteria: string | undefined = undefined;
+  readonly overrideExisting?: boolean | undefined;
+  readonly filterPattern?: string | undefined;
 }
 
 export class CloudWatchLogsConfig implements i.ICloudWatchLogsConfig {
   readonly dynamicPartitioning: string | undefined = undefined;
+  readonly dynamicPartitioningByAccountId: boolean | undefined = undefined;
   readonly enable: boolean | undefined = undefined;
   readonly encryption: ServiceEncryptionConfig | undefined = undefined;
   readonly exclusions: CloudWatchLogsExclusionConfig[] | undefined = undefined;
   readonly replaceLogDestinationArn: string | undefined = undefined;
   readonly dataProtection: CloudWatchDataProtectionConfig | undefined = undefined;
   readonly firehose: CloudWatchFirehoseConfig | undefined = undefined;
+  readonly subscription: CloudWatchSubscriptionConfig | undefined = undefined;
+  readonly kinesis: CloudWatchKinesisConfig | undefined = undefined;
 }
 
 export class LoggingConfig implements i.ILoggingConfig {
@@ -523,8 +554,7 @@ export class SsmParametersConfig implements i.ISsmParametersConfig {
 }
 
 export class DefaultEventBusConfig implements i.IDefaultEventBusConfig {
-  readonly applyDefaultEventBusPolicy: boolean | undefined = undefined;
-  readonly customPolicyOverride: t.ICustomEventBusResourcePolicyOverrideConfig | undefined = undefined;
+  readonly policy: string = '';
   readonly deploymentTargets: t.DeploymentTargets = new t.DeploymentTargets();
 }
 
@@ -562,6 +592,7 @@ export class GlobalConfig implements i.IGlobalConfig {
   readonly lambda: LambdaConfig | undefined = undefined;
   readonly s3: S3GlobalConfig | undefined = undefined;
   readonly defaultEventBus: DefaultEventBusConfig | undefined = undefined;
+  readonly sqs: SqsConfig | undefined = undefined;
 
   /**
    * SSM IAM Role Parameters to be loaded for session manager policy attachments
@@ -727,7 +758,7 @@ export class GlobalConfig implements i.IGlobalConfig {
     this.externalLandingZoneResources.accountsDeployedExternally = uniqueNonSuspendedAccounts;
   }
 
-  // Function to filter out suspended sccounts and non-ASEA created accounts
+  // Function to filter out suspended accounts and non-ASEA created accounts
   private async findUniqueNonSuspendedAccounts(
     accountsConfig: AccountsConfig,
     uniqueAccountsFromMapping: string[],
@@ -735,11 +766,17 @@ export class GlobalConfig implements i.IGlobalConfig {
     let uniqueNonSuspendedAccounts: string[] = [];
     let nonSuspendedAccounts: string[] = [];
     const accountIds = accountsConfig.accountIds;
+    const uniqueAccountsEmails: string[] = [
+      ...accountsConfig.workloadAccounts.map(({ email }) => email.toLowerCase()),
+      ...accountsConfig.mandatoryAccounts.map(({ email }) => email.toLowerCase()),
+    ];
+
     if (accountIds) {
-      // From Accounts Config, only get accounts which are ACTIVE (not suspended)
+      // From Accounts Config, only get accounts which are ACTIVE (not suspended) and defined in accounts-config.yaml
       nonSuspendedAccounts = accountIds
-        .filter(account => account.status === 'ACTIVE')
+        .filter(account => account.status === 'ACTIVE' && uniqueAccountsEmails.includes(account.email.toLowerCase()))
         .map(account => account.accountId);
+
       // Compare and make sure list is both in resource mapping and an active account in Accounts Config
       // This will also filter out accounts created by LZA natively and not ASEA
       uniqueNonSuspendedAccounts = nonSuspendedAccounts.filter(nonSuspendedAccount =>

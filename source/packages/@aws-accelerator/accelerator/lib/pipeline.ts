@@ -27,6 +27,7 @@ import { AcceleratorToolkitCommand } from './toolkit';
 import { Repository } from '@aws-cdk-extensions/cdk-extensions';
 import { CONTROL_TOWER_LANDING_ZONE_VERSION } from '@aws-accelerator/utils/lib/control-tower';
 import { ControlTowerLandingZoneConfig } from '@aws-accelerator/config';
+import { getNodeVersion } from '@aws-accelerator/utils/lib/common-functions';
 
 export interface AcceleratorPipelineProps {
   readonly toolkitRole: cdk.aws_iam.Role;
@@ -219,6 +220,9 @@ export class AcceleratorPipeline extends Construct {
     let pipelineName = `${props.prefixes.accelerator}-Pipeline`;
     let buildProjectName = `${props.prefixes.accelerator}-BuildProject`;
     let toolkitProjectName = `${props.prefixes.accelerator}-ToolkitProject`;
+    this.diffS3Uri = `s3://${this.props.prefixes.bucketName}-pipeline-${cdk.Stack.of(this).account}-${
+      cdk.Stack.of(this).region
+    }/AWSAccelerator-Pipel/Diffs`;
 
     //
     // Change the fields when qualifier is present
@@ -232,6 +236,25 @@ export class AcceleratorPipeline extends Construct {
       pipelineName = `${this.props.qualifier}-pipeline`;
       buildProjectName = `${this.props.qualifier}-build-project`;
       toolkitProjectName = `${this.props.qualifier}-toolkit-project`;
+      this.diffS3Uri = `s3://${this.props.qualifier}-pipeline-${cdk.Stack.of(this).account}-${
+        cdk.Stack.of(this).region
+      }/AWSAccelerator-Pipel/Diffs`;
+    }
+
+    let nodeEnvVariables: { [p: string]: codebuild.BuildEnvironmentVariable } | undefined;
+
+    /**
+     * This environment variable is only present when user decides to have a custom runtime
+     * If this environment variable is not present then runtime is set to whatever the value
+     * is in source/package.json `config.node.version.default`
+     */
+    if (process.env['ACCELERATOR_NODE_VERSION']) {
+      nodeEnvVariables = {
+        ACCELERATOR_NODE_VERSION: {
+          type: codebuild.BuildEnvironmentVariableType.PLAINTEXT,
+          value: getNodeVersion(),
+        },
+      };
     }
 
     let pipelineAccountEnvVariables: { [p: string]: codebuild.BuildEnvironmentVariable } | undefined;
@@ -350,6 +373,7 @@ export class AcceleratorPipeline extends Construct {
         branch: this.props.sourceBranchName,
         output: this.acceleratorRepoArtifact,
         trigger: codepipeline_actions.CodeCommitTrigger.NONE,
+        role: this.pipelineRole,
       });
     } else if (this.props.sourceBucketName && this.props.sourceBucketName.length > 0) {
       // hidden parameter to use S3 for source code via cdk context
@@ -428,6 +452,7 @@ export class AcceleratorPipeline extends Construct {
             output: this.configRepoArtifact,
             trigger: codepipeline_actions.CodeCommitTrigger.NONE,
             variablesNamespace: 'Config-Vars',
+            role: this.pipelineRole,
           }),
         ],
       });
@@ -499,7 +524,7 @@ export class AcceleratorPipeline extends Construct {
         phases: {
           install: {
             'runtime-versions': {
-              nodejs: 18,
+              nodejs: getNodeVersion(),
             },
           },
           pre_build: {
@@ -555,20 +580,18 @@ export class AcceleratorPipeline extends Construct {
           },
           ...enableSingleAccountModeEnvVariables,
           ...pipelineAccountEnvVariables,
+          ...nodeEnvVariables,
         },
       },
       cache: codebuild.Cache.local(codebuild.LocalCacheMode.SOURCE),
     });
 
     /**
-     * Toolkit CodeBuild poroject is used to run all Accelerator stages, including diff
+     * Toolkit CodeBuild project is used to run all Accelerator stages, including diff
      * First it executes synth of all Pipeline stages and then diff within the same container.
      * CloudFormation templates are then reused for all further stages
-     * Diff files are uploaded to pipeline S3 bucket
+     * Diff files are uploaded to pipeline S3 bucket - consideration needed if running in external account
      */
-    this.diffS3Uri = `s3://${this.props.prefixes.bucketName}-pipeline-${cdk.Stack.of(this).account}-${
-      cdk.Stack.of(this).region
-    }/AWSAccelerator-Pipel/Diffs`;
 
     this.toolkitProject = new codebuild.PipelineProject(this, 'ToolkitProject', {
       projectName: toolkitProjectName,
@@ -580,7 +603,7 @@ export class AcceleratorPipeline extends Construct {
         phases: {
           install: {
             'runtime-versions': {
-              nodejs: 18,
+              nodejs: getNodeVersion(),
             },
           },
           pre_build: {
@@ -602,13 +625,17 @@ export class AcceleratorPipeline extends Construct {
                 cdk.Aws.PARTITION
               } --use-existing-role ${
                 this.props.useExistingRoles ? 'Yes' : 'No'
-              } --config-dir $CODEBUILD_SRC_DIR_Config && if [ -z "\${ACCELERATOR_NO_ORG_MODULE}" ]; then LOG_LEVEL=${
-                BuildLogLevel.INFO
-              } yarn run ts-node ../lza-modules/bin/runner.ts --module aws-organizations --partition  ${
+              } --config-dir $CODEBUILD_SRC_DIR_Config; fi`,
+              `if [ "prepare" = "\${ACCELERATOR_STAGE}" ] && [ -z "\${ACCELERATOR_NO_ORG_MODULE}" ]; then set -e && LOG_LEVEL=info && yarn run ts-node ../lza-modules/bin/runner.ts --module aws-organizations --partition  ${
                 cdk.Aws.PARTITION
               } --use-existing-role ${
                 this.props.useExistingRoles ? 'Yes' : 'No'
-              } --config-dir $CODEBUILD_SRC_DIR_Config; else echo "Module aws-organizations execution skipped by environment settings."; fi ; fi`,
+              } --config-dir $CODEBUILD_SRC_DIR_Config; else echo "Module aws-organizations execution skipped by environment settings."; fi`,
+              `if [ "prepare" = "\${ACCELERATOR_STAGE}" ]; then set -e && LOG_LEVEL=info && yarn run ts-node ../lza-modules/bin/runner.ts --module account-alias --partition  ${
+                cdk.Aws.PARTITION
+              } --use-existing-role ${
+                this.props.useExistingRoles ? 'Yes' : 'No'
+              } --config-dir $CODEBUILD_SRC_DIR_Config; fi`,
               `if [ "prepare" = "\${ACCELERATOR_STAGE}" ]; then set -e && yarn run ts-node  ./lib/prerequisites.ts --config-dir $CODEBUILD_SRC_DIR_Config --partition ${cdk.Aws.PARTITION} --minimal; fi`,
               'export FULL_SYNTH="true"',
               'if [ $ASEA_MAPPING_BUCKET ]; then aws s3api head-object --bucket $ASEA_MAPPING_BUCKET --key $ASEA_MAPPING_FILE >/dev/null 2>&1 || export FULL_SYNTH="false"; fi;',
@@ -739,9 +766,22 @@ export class AcceleratorPipeline extends Construct {
             type: codebuild.BuildEnvironmentVariableType.PLAINTEXT,
             value: props.enableApprovalStage ? 'Yes' : 'No',
           },
+          USE_EXISTING_CONFIG_REPO: {
+            type: cdk.aws_codebuild.BuildEnvironmentVariableType.PLAINTEXT,
+            value: this.props.useExistingConfigRepo ? 'Yes' : 'No',
+          },
+          EXISTING_CONFIG_REPOSITORY_NAME: {
+            type: cdk.aws_codebuild.BuildEnvironmentVariableType.PLAINTEXT,
+            value: this.props.configRepositoryName,
+          },
+          EXISTING_CONFIG_REPOSITORY_BRANCH_NAME: {
+            type: cdk.aws_codebuild.BuildEnvironmentVariableType.PLAINTEXT,
+            value: this.props.configRepositoryBranchName,
+          },
           ...enableSingleAccountModeEnvVariables,
           ...pipelineAccountEnvVariables,
           ...aseaMigrationModeEnvVariables,
+          ...nodeEnvVariables,
         },
       },
       cache: codebuild.Cache.local(codebuild.LocalCacheMode.SOURCE),
@@ -963,8 +1003,8 @@ export class AcceleratorPipeline extends Construct {
        */
       const reviewLink = `https://${cdk.Stack.of(this).region}.console.${this.getConsoleUrlSuffixForPartition(
         this.props.partition,
-      )}/s3/buckets/${this.props.prefixes.bucketName}-pipeline-${cdk.Stack.of(this).account}-${
-        cdk.Stack.of(this).region
+      )}/s3/buckets/${
+        this.pipeline.artifactBucket.bucketName
       }?prefix=AWSAccelerator-Pipel/Diffs/#{codepipeline.PipelineExecutionId}/&region=${
         cdk.Stack.of(this).region
       }&bucketType=general`;
@@ -977,10 +1017,11 @@ export class AcceleratorPipeline extends Construct {
             runOrder: 2,
             additionalInformation: `
               Changes for this execution can be found in accelerator pipeline S3 bucket under Diffs/#{codepipeline.PipelineExecutionId}. 
-              Use cli command for download: "aws s3 sync ${this.diffS3Uri}/#{codepipeline.PipelineExecutionId} diffs" or follow the link bellow.`,
+              Use cli command for download: "aws s3 sync ${this.diffS3Uri}/#{codepipeline.PipelineExecutionId} diffs" or follow the link below.`,
             notificationTopic,
             externalEntityLink: reviewLink,
             notifyEmails,
+            role: this.pipelineRole,
           }),
         ],
       });

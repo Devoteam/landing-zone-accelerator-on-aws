@@ -2,7 +2,7 @@ import { ImportAseaResourcesStack, LogLevel } from '../stacks/import-asea-resour
 import { AseaResource, AseaResourceProps } from './resource';
 import { AseaResourceType } from '@aws-accelerator/config';
 import { pascalCase } from 'pascal-case';
-import { SsmResourceType } from '@aws-accelerator/utils';
+import { SsmResourceType, getAseaVpcName } from '@aws-accelerator/utils';
 import * as cdk from 'aws-cdk-lib';
 const ASEA_PHASE_NUMBER = '1';
 const enum RESOURCE_TYPE {
@@ -18,7 +18,6 @@ export class Route53ResolverQueryLogging extends AseaResource {
   constructor(scope: ImportAseaResourcesStack, route53ResolverQueryLoggingProps: AseaResourceProps) {
     super(scope, route53ResolverQueryLoggingProps);
     this.props = route53ResolverQueryLoggingProps;
-    this.scope.acceleratorPrefix;
     if (route53ResolverQueryLoggingProps.stackInfo.phase !== ASEA_PHASE_NUMBER) {
       // Skip Non-Phase 1 resource stacks
       this.scope.addLogs(
@@ -40,16 +39,15 @@ export class Route53ResolverQueryLogging extends AseaResource {
       if (!queryLogs) {
         continue;
       }
-      const vpcId = this.getVPCId(vpcItem.name);
+      const vpcId = this.getVPCId(getAseaVpcName(vpcItem.name));
       if (!vpcId) {
         continue;
       }
       const resolverQueryLogCfn = this.scope.importStackResources.getResourceByName(
         'Name',
-        `${this.props.globalConfig.externalLandingZoneResources?.acceleratorPrefix}-rql-${vpcItem.name}`.replace(
-          '_vpc',
-          '',
-        ),
+        `${this.props.globalConfig.externalLandingZoneResources?.acceleratorPrefix}-rql-${getAseaVpcName(
+          vpcItem.name,
+        ).replace('_vpc', '')}`,
       );
       if (!resolverQueryLogCfn) {
         continue;

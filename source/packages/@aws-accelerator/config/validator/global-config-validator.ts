@@ -17,12 +17,13 @@ import fs from 'fs';
 import path from 'path';
 import winston from 'winston';
 import { AccountsConfig } from '../lib/accounts-config';
-import { GlobalConfig } from '../lib/global-config';
+import { GlobalConfig, CloudWatchKinesisConfig, CloudWatchFirehoseLamdaProcessorConfig } from '../lib/global-config';
 import { IamConfig } from '../lib/iam-config';
 import { SecurityConfig } from '../lib/security-config';
 import { OrganizationConfig } from '../lib/organization-config';
 import { CommonValidatorFunctions } from './common/common-validator-functions';
 import { DeploymentTargets, Region } from '../lib/common';
+import { StreamMode } from '@aws-sdk/client-kinesis';
 
 export class GlobalConfigValidator {
   constructor(
@@ -79,6 +80,10 @@ export class GlobalConfigValidator {
     // Validate CentralLogs bucket encryption policies.
     //
     this.validateImportedCentralLogsBucketKmsPolicies(configDir, values, errors);
+    //
+    // Validate no duplicate key/value tags in config.
+    //
+    this.validateNoDuplicateTags(values, errors);
     //
     // lifecycle rule expiration validation
     //
@@ -186,6 +191,16 @@ export class GlobalConfigValidator {
     //
     this.validateEventBusPolicyConfiguration(values, configDir, errors);
 
+    //
+    // Validate Kinesis configuration
+    //
+    this.validateKinesisConfiguration(values.logging.cloudwatchLogs?.kinesis, errors);
+
+    //
+    // Validate Firehose Lambda processor configuration
+    //
+    this.validateFirehoseLambdaProcessorConfiguration(values.logging.cloudwatchLogs?.firehose?.lambdaProcessor, errors);
+
     if (errors.length) {
       throw new Error(`${GlobalConfig.FILENAME} has ${errors.length} issues:\n${errors.join('\n')}`);
     }
@@ -217,6 +232,24 @@ export class GlobalConfigValidator {
       accountNames.push(accountItem.name);
     }
     return accountNames;
+  }
+
+  /**
+   * Function to validate there are no duplicate tag keys in the configuration
+   * @param values Global configuration values
+   * @param errors Array to store validation error messages
+   */
+  private validateNoDuplicateTags(values: GlobalConfig, errors: string[]) {
+    const tags = values.tags ?? [];
+
+    const duplicateKeys = tags.map(tag => tag.key).filter((key, index, array) => array.indexOf(key) !== index);
+
+    if (duplicateKeys.length > 0) {
+      const uniqueDuplicates = [...new Set(duplicateKeys)];
+      uniqueDuplicates.forEach(key => {
+        errors.push(`Duplicate tag key "${key}" found. Tag keys must be unique.`);
+      });
+    }
   }
 
   /**
@@ -1350,24 +1383,9 @@ export class GlobalConfigValidator {
       return;
     }
 
-    if (values.defaultEventBus.applyDefaultEventBusPolicy && values.defaultEventBus.customPolicyOverride) {
-      errors.push(`customPolicyOverrides can only be specified when applyDefaultEventBusPolicy is set to false`);
-    }
-    if (values.defaultEventBus.customPolicyOverride?.policy) {
-      const errorMessage = 'Please make sure this file is in valid JSON format.';
-      if (!fs.existsSync(path.join(configDir, values.defaultEventBus.customPolicyOverride?.policy))) {
-        errors.push(
-          `Default event bus policy override file ${values.defaultEventBus.customPolicyOverride?.policy} not found !!!`,
-        );
-      }
-      const eventBridgePolicyFile = fs.readFileSync(
-        path.join(configDir, values.defaultEventBus.customPolicyOverride?.policy),
-        'utf-8',
-      );
-      if (JSON.parse(eventBridgePolicyFile)) {
-        this.checkForArray(JSON.parse(eventBridgePolicyFile), errorMessage, errors);
-      } else {
-        errors.push(`Not valid Json for default event bridge resource-based policy. ${errorMessage}`);
+    if (values.defaultEventBus.policy) {
+      if (!fs.existsSync(path.join(configDir, values.defaultEventBus.policy))) {
+        errors.push(`Default event bus policy file ${values.defaultEventBus.policy} not found !!!`);
       }
     }
   }
@@ -1406,6 +1424,63 @@ export class GlobalConfigValidator {
       if (ouIdNames.indexOf(ou) === -1) {
         errors.push(
           `Deployment target OU ${ou} for default event bus configuration does not exist in organization-config.yaml file.`,
+        );
+      }
+    }
+  }
+  /**
+   * Function to validate existence of default kinesis configuration
+   * @param values
+   */
+  private validateKinesisConfiguration(kinesisConfig: CloudWatchKinesisConfig | undefined, errors: string[]) {
+    // nothing is specified use defaults
+    if (!kinesisConfig) {
+      return;
+    }
+
+    if (kinesisConfig) {
+      // check shard count for stream when streaming mode is provisioned or undefined
+      if (
+        // if no shards are specified then allocate 1 shard
+        (kinesisConfig.shardCount ?? 1) < 1 &&
+        // if no streaming mode is specified then assume its in provisioned mode
+        (kinesisConfig.streamingMode ?? StreamMode.PROVISIONED) === StreamMode.PROVISIONED
+      ) {
+        errors.push(
+          `Specified globalConfig.logging.cloudwatch.kinesis.shardCount less than 1 when streaming mode is provisioned`,
+        );
+      }
+      // check if retention is between 24 and 8760 and is an integer
+      const retention = kinesisConfig.retention ?? 24; // Default to 24 if undefined
+      if (!Number.isInteger(retention) || retention < 24 || retention > 8760) {
+        errors.push(
+          `Retention must be an integer between 24 and 8760 hours. Specified value at globalConfig.logging.cloudwatch.kinesis.retention : ${retention}`,
+        );
+      }
+    }
+  }
+  /**
+   * Function to validate existence of default firehose lambda processor configuration
+   * @param values
+   */
+  private validateFirehoseLambdaProcessorConfiguration(
+    lambdaProcessor: CloudWatchFirehoseLamdaProcessorConfig | undefined,
+    errors: string[],
+  ) {
+    if (lambdaProcessor) {
+      // check buffer size and buffer interval
+      // if no buffer size is provided assume default of 0.2
+      const bufferSize = lambdaProcessor.bufferSize ?? 0.2;
+      // if no buffer interval is provided assume default of 60
+      const bufferInterval = lambdaProcessor.bufferInterval ?? 60;
+      if (bufferSize < 0.2 || bufferSize > 3) {
+        errors.push(
+          `Specified globalConfig.logging.cloudwatch.firehose.lambdaProcessor.bufferSize: ${bufferSize}. It should be between 0.2 and 3.`,
+        );
+      }
+      if (bufferInterval < 60 || bufferInterval > 900) {
+        errors.push(
+          `Specified globalConfig.logging.cloudwatch.firehose.lambdaProcessor.bufferInterval: ${bufferInterval}. It should be between 60 and 900.`,
         );
       }
     }

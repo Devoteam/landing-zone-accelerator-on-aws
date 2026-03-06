@@ -493,16 +493,18 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
             "DRIFT_PARAMETER_NAME": {
               "Ref": "AcceleratorControlTowerDriftParameter217B3055",
             },
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
           },
         },
         "Handler": "index.handler",
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "ControlTowerNotificationsFunctionServiceRoleB3D23260",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 300,
       },
       "Type": "AWS::Lambda::Function",
@@ -642,16 +644,18 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
             "CONFIG_TABLE_NAME": {
               "Ref": "AcceleratorConfigTable590367C4",
             },
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
           },
         },
         "Handler": "index.handler",
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "ControlTowerOuEventsFunctionServiceRoleBC29C0C5",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 300,
       },
       "Type": "AWS::Lambda::Function",
@@ -926,6 +930,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
         "Description": "AWS CDK resource provider framework - isComplete (AWSAccelerator-PrepareStack-111111111111-us-east-1/CreateCTAccounts/CreateControlTowerAcccountsProvider)",
         "Environment": {
           "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
             "USER_IS_COMPLETE_FUNCTION_ARN": {
               "Fn::GetAtt": [
                 "CreateCTAccountsCreateControlTowerAccountStatusE993FA04",
@@ -941,6 +946,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
           },
         },
         "Handler": "framework.isComplete",
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CreateCTAccountsCreateControlTowerAcccountsProviderframeworkisCompleteServiceRoleBB950C19",
@@ -1175,6 +1181,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
         "Description": "AWS CDK resource provider framework - onEvent (AWSAccelerator-PrepareStack-111111111111-us-east-1/CreateCTAccounts/CreateControlTowerAcccountsProvider)",
         "Environment": {
           "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
             "USER_IS_COMPLETE_FUNCTION_ARN": {
               "Fn::GetAtt": [
                 "CreateCTAccountsCreateControlTowerAccountStatusE993FA04",
@@ -1193,6 +1200,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
           },
         },
         "Handler": "framework.onEvent",
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CreateCTAccountsCreateControlTowerAcccountsProviderframeworkonEventServiceRole773985D8",
@@ -1434,6 +1442,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
         "Description": "AWS CDK resource provider framework - onTimeout (AWSAccelerator-PrepareStack-111111111111-us-east-1/CreateCTAccounts/CreateControlTowerAcccountsProvider)",
         "Environment": {
           "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
             "USER_IS_COMPLETE_FUNCTION_ARN": {
               "Fn::GetAtt": [
                 "CreateCTAccountsCreateControlTowerAccountStatusE993FA04",
@@ -1449,6 +1458,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
           },
         },
         "Handler": "framework.onTimeout",
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CreateCTAccountsCreateControlTowerAcccountsProviderframeworkonTimeoutServiceRole8A0E95FA",
@@ -1949,6 +1959,11 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
         "Description": "Create Control Tower Account onEvent handler",
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "index.handler",
         "KmsKeyArn": {
           "Fn::GetAtt": [
@@ -1956,13 +1971,14 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
             "Arn",
           ],
         },
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CreateCTAccountsCreateControlTowerAccountServiceRoleAEFB3CA3",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 60,
       },
       "Type": "AWS::Lambda::Function",
@@ -2140,6 +2156,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
             "NewAccountsTableName": {
               "Ref": "NewCTAccountsE326CD07",
             },
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
           },
         },
         "Handler": "index.handler",
@@ -2149,13 +2166,14 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
             "Arn",
           ],
         },
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CreateCTAccountsCreateControlTowerAccountStatusServiceRole999B76C4",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 300,
       },
       "Type": "AWS::Lambda::Function",
@@ -2585,6 +2603,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
             "NewOrgAccountsTableName": {
               "Ref": "NewOrgAccountsE5BA262F",
             },
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
           },
         },
         "Handler": "index.handler",
@@ -2594,13 +2613,14 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
             "Arn",
           ],
         },
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CreateOrganizationAccountsCreateOrganizationAccountStatusServiceRole5944FA8B",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 300,
       },
       "Type": "AWS::Lambda::Function",
@@ -2857,6 +2877,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
         "Description": "AWS CDK resource provider framework - isComplete (AWSAccelerator-PrepareStack-111111111111-us-east-1/CreateOrganizationAccounts/CreateOrganizationAccountsProvider)",
         "Environment": {
           "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
             "USER_IS_COMPLETE_FUNCTION_ARN": {
               "Fn::GetAtt": [
                 "CreateOrganizationAccountsCreateOrganizationAccountStatusBBDEFDFE",
@@ -2872,6 +2893,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
           },
         },
         "Handler": "framework.isComplete",
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CreateOrganizationAccountsCreateOrganizationAccountsProviderframeworkisCompleteServiceRole19A96F30",
@@ -3043,6 +3065,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
         "Description": "AWS CDK resource provider framework - onEvent (AWSAccelerator-PrepareStack-111111111111-us-east-1/CreateOrganizationAccounts/CreateOrganizationAccountsProvider)",
         "Environment": {
           "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
             "USER_IS_COMPLETE_FUNCTION_ARN": {
               "Fn::GetAtt": [
                 "CreateOrganizationAccountsCreateOrganizationAccountStatusBBDEFDFE",
@@ -3061,6 +3084,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
           },
         },
         "Handler": "framework.onEvent",
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CreateOrganizationAccountsCreateOrganizationAccountsProviderframeworkonEventServiceRole66CD01EF",
@@ -3239,6 +3263,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
         "Description": "AWS CDK resource provider framework - onTimeout (AWSAccelerator-PrepareStack-111111111111-us-east-1/CreateOrganizationAccounts/CreateOrganizationAccountsProvider)",
         "Environment": {
           "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
             "USER_IS_COMPLETE_FUNCTION_ARN": {
               "Fn::GetAtt": [
                 "CreateOrganizationAccountsCreateOrganizationAccountStatusBBDEFDFE",
@@ -3254,6 +3279,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
           },
         },
         "Handler": "framework.onTimeout",
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CreateOrganizationAccountsCreateOrganizationAccountsProviderframeworkonTimeoutServiceRoleA8ECA8F4",
@@ -3653,6 +3679,11 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
         "Description": "Create Organization Accounts OnEvent handler",
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "index.handler",
         "KmsKeyArn": {
           "Fn::GetAtt": [
@@ -3660,13 +3691,14 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
             "Arn",
           ],
         },
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CreateOrganizationAccountsServiceRole99CB3720",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 30,
       },
       "Type": "AWS::Lambda::Function",
@@ -3758,15 +3790,20 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
           "S3Bucket": "cdk-hnb659fds-assets-111111111111-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomGetPortfolioIdCustomResourceProviderRole698D24D6",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -3845,15 +3882,20 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
           "S3Bucket": "cdk-hnb659fds-assets-111111111111-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomInviteAccountsToOrganizationCustomResourceProviderRole88663193",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -3969,6 +4011,11 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
           "S3Bucket": "cdk-hnb659fds-assets-111111111111-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
         "MemorySize": 1024,
         "Role": {
@@ -3977,7 +4024,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -4131,15 +4178,20 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
           "S3Bucket": "cdk-hnb659fds-assets-111111111111-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomOrganizationsCreateOrganizationalUnitsCustomResourceProviderRole4B8B81B0",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -4298,7 +4350,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
             "Arn",
           ],
         },
-        "accountConfigS3Key": "7862daf1a54c347eedca1c3083aa8d03a12033fbb398666b50ba926cfb64ce14.yaml",
+        "accountConfigS3Key": "63719fee842b919b4c18317c680c63ac7aee966fbc80ad273eeade6349c40186.yaml",
         "auditAccountEmail": "all-enabled-audit-account@example.com",
         "commitId": "",
         "configRepositoryName": "aws-accelerator-config",
@@ -4595,7 +4647,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
       "Properties": {
         "Name": "/accelerator/AWSAccelerator-PrepareStack-111111111111-us-east-1/version",
         "Type": "String",
-        "Value": "1.11.0",
+        "Value": "1.12.2",
       },
       "Type": "AWS::SSM::Parameter",
     },
@@ -4614,6 +4666,42 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
         "Name": "/accelerator/validation/Network/network/vpc/Network-Inspection/deployedCidrs",
         "Type": "String",
         "Value": "10.2.0.0/22,10.3.0.0/16",
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
+    "SsmParamNetworkVpcNetworkNonTemplateStaticCentralDeployedCidrs162B65AA": {
+      "DependsOn": [
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEvent4F574CF7",
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEventServiceRoleDefaultPolicyA669E020",
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEventServiceRole675155BD",
+        "ValidateEnvironmentConfigValidateEnvironmentFunction13F94F77",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionServiceRoleDefaultPolicy9ACA86A8",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionServiceRole09865D4C",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionLogGroup632317CC",
+        "ValidateEnvironmentConfigValidateEnvironmentResourceD10DC179",
+      ],
+      "Properties": {
+        "Name": "/accelerator/validation/Network/network/vpc/Network-NonTemplate-Static-Central/deployedCidrs",
+        "Type": "String",
+        "Value": "172.17.0.0/24",
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
+    "SsmParamNetworkVpcNetworkNonTemplateStaticWestDeployedCidrsFEE887A1": {
+      "DependsOn": [
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEvent4F574CF7",
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEventServiceRoleDefaultPolicyA669E020",
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEventServiceRole675155BD",
+        "ValidateEnvironmentConfigValidateEnvironmentFunction13F94F77",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionServiceRoleDefaultPolicy9ACA86A8",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionServiceRole09865D4C",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionLogGroup632317CC",
+        "ValidateEnvironmentConfigValidateEnvironmentResourceD10DC179",
+      ],
+      "Properties": {
+        "Name": "/accelerator/validation/Network/network/vpc/Network-NonTemplate-Static-West/deployedCidrs",
+        "Type": "String",
+        "Value": "172.18.0.0/24",
       },
       "Type": "AWS::SSM::Parameter",
     },
@@ -4653,6 +4741,60 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
       },
       "Type": "AWS::SSM::Parameter",
     },
+    "SsmParamSharedServicesVpcSharedServicesNonTemplateStaticCentral2DeployedCidrsAAC9F02F": {
+      "DependsOn": [
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEvent4F574CF7",
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEventServiceRoleDefaultPolicyA669E020",
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEventServiceRole675155BD",
+        "ValidateEnvironmentConfigValidateEnvironmentFunction13F94F77",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionServiceRoleDefaultPolicy9ACA86A8",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionServiceRole09865D4C",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionLogGroup632317CC",
+        "ValidateEnvironmentConfigValidateEnvironmentResourceD10DC179",
+      ],
+      "Properties": {
+        "Name": "/accelerator/validation/SharedServices/network/vpc/SharedServices-NonTemplate-Static-Central-2/deployedCidrs",
+        "Type": "String",
+        "Value": "172.20.0.0/24",
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
+    "SsmParamSharedServicesVpcSharedServicesNonTemplateStaticCentralDeployedCidrs0E5FEC95": {
+      "DependsOn": [
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEvent4F574CF7",
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEventServiceRoleDefaultPolicyA669E020",
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEventServiceRole675155BD",
+        "ValidateEnvironmentConfigValidateEnvironmentFunction13F94F77",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionServiceRoleDefaultPolicy9ACA86A8",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionServiceRole09865D4C",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionLogGroup632317CC",
+        "ValidateEnvironmentConfigValidateEnvironmentResourceD10DC179",
+      ],
+      "Properties": {
+        "Name": "/accelerator/validation/SharedServices/network/vpc/SharedServices-NonTemplate-Static-Central/deployedCidrs",
+        "Type": "String",
+        "Value": "172.19.0.0/24",
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
+    "SsmParamSharedServicesVpcSharedServicesNonTemplateStaticWestDeployedCidrs48185C42": {
+      "DependsOn": [
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEvent4F574CF7",
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEventServiceRoleDefaultPolicyA669E020",
+        "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEventServiceRole675155BD",
+        "ValidateEnvironmentConfigValidateEnvironmentFunction13F94F77",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionServiceRoleDefaultPolicy9ACA86A8",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionServiceRole09865D4C",
+        "ValidateEnvironmentConfigValidateEnvironmentFunctionLogGroup632317CC",
+        "ValidateEnvironmentConfigValidateEnvironmentResourceD10DC179",
+      ],
+      "Properties": {
+        "Name": "/accelerator/validation/SharedServices/network/vpc/SharedServices-NonTemplate-Static-West/deployedCidrs",
+        "Type": "String",
+        "Value": "172.26.0.0/24",
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
     "SsmParamStackId521A78D3": {
       "Properties": {
         "Name": "/accelerator/AWSAccelerator-PrepareStack-111111111111-us-east-1/stack-id",
@@ -4676,6 +4818,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
         "Description": "AWS CDK resource provider framework - onEvent (AWSAccelerator-PrepareStack-111111111111-us-east-1/ValidateEnvironmentConfig/Custom::ValidateEnvironmentConfiguration)",
         "Environment": {
           "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
             "USER_ON_EVENT_FUNCTION_ARN": {
               "Fn::GetAtt": [
                 "ValidateEnvironmentConfigValidateEnvironmentFunction13F94F77",
@@ -4685,6 +4828,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
           },
         },
         "Handler": "framework.onEvent",
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "ValidateEnvironmentConfigCustomValidateEnvironmentConfigurationframeworkonEventServiceRole675155BD",
@@ -4800,6 +4944,11 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
         "Description": "Validate Environment Configuration",
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "index.handler",
         "MemorySize": 1024,
         "Role": {
@@ -4808,7 +4957,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -4999,9 +5148,7 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
                     ],
                   ],
                 },
-                "arn:aws:ssm:us-east-1:111111111111:parameter/accelerator/validation/Network/network/vpc/Network-Inspection/deployedCidrs",
-                "arn:aws:ssm:us-east-1:111111111111:parameter/accelerator/validation/SharedServices/network/vpc/SharedServices-Main/deployedCidrs",
-                "arn:aws:ssm:us-east-1:111111111111:parameter/accelerator/validation/SharedServices/network/vpc/SharedServices-appVpc/deployedCidrs",
+                "arn:aws:ssm:us-east-1:111111111111:parameter/accelerator/validation/*/network/vpc/*/deployedCidrs",
               ],
               "Sid": "sms",
             },
@@ -5124,6 +5271,46 @@ exports[`PrepareStack Construct(PrepareStack):  Snapshot Test 1`] = `
             "logicalId": "SsmParamSharedServicesVpcSharedServicesAppVpcDeployedCidrs",
             "parameterName": "/accelerator/validation/SharedServices/network/vpc/SharedServices-appVpc/deployedCidrs",
             "vpcName": "SharedServices/SharedServices-appVpc",
+          },
+          {
+            "cidrs": [
+              "172.17.0.0/24",
+            ],
+            "logicalId": "SsmParamNetworkVpcNetworkNonTemplateStaticCentralDeployedCidrs",
+            "parameterName": "/accelerator/validation/Network/network/vpc/Network-NonTemplate-Static-Central/deployedCidrs",
+            "vpcName": "Network/Network-NonTemplate-Static-Central",
+          },
+          {
+            "cidrs": [
+              "172.18.0.0/24",
+            ],
+            "logicalId": "SsmParamNetworkVpcNetworkNonTemplateStaticWestDeployedCidrs",
+            "parameterName": "/accelerator/validation/Network/network/vpc/Network-NonTemplate-Static-West/deployedCidrs",
+            "vpcName": "Network/Network-NonTemplate-Static-West",
+          },
+          {
+            "cidrs": [
+              "172.19.0.0/24",
+            ],
+            "logicalId": "SsmParamSharedServicesVpcSharedServicesNonTemplateStaticCentralDeployedCidrs",
+            "parameterName": "/accelerator/validation/SharedServices/network/vpc/SharedServices-NonTemplate-Static-Central/deployedCidrs",
+            "vpcName": "SharedServices/SharedServices-NonTemplate-Static-Central",
+          },
+          {
+            "cidrs": [
+              "172.20.0.0/24",
+            ],
+            "logicalId": "SsmParamSharedServicesVpcSharedServicesNonTemplateStaticCentral_2DeployedCidrs",
+            "parameterName": "/accelerator/validation/SharedServices/network/vpc/SharedServices-NonTemplate-Static-Central-2/deployedCidrs",
+            "vpcName": "SharedServices/SharedServices-NonTemplate-Static-Central-2",
+          },
+          {
+            "cidrs": [
+              "172.26.0.0/24",
+            ],
+            "logicalId": "SsmParamSharedServicesVpcSharedServicesNonTemplateStaticWestDeployedCidrs",
+            "parameterName": "/accelerator/validation/SharedServices/network/vpc/SharedServices-NonTemplate-Static-West/deployedCidrs",
+            "vpcName": "SharedServices/SharedServices-NonTemplate-Static-West",
           },
         ],
       },

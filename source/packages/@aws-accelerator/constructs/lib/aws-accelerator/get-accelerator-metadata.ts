@@ -16,6 +16,7 @@ import { Construct } from 'constructs';
 import { NagSuppressions } from 'cdk-nag';
 import { pascalCase } from 'change-case';
 const path = require('path');
+import { DEFAULT_LAMBDA_RUNTIME } from '../../../utils/lib/lambda';
 
 /**
  * Initialized AcceleratorMetadataProps properties
@@ -77,10 +78,14 @@ export interface AcceleratorMetadataProps {
    * Global Region
    */
   readonly globalRegion: string;
+  /**
+   * Installer Stack Name
+   */
+  readonly installerStackName: string;
 }
 
 /**
- * Class for FMSOrganizationAdminAccount
+ * Class for Accelerator Metadata
  */
 export class AcceleratorMetadata extends Construct {
   lambdaFunction: { lambda: cdk.aws_lambda.Function; logGroup: cdk.aws_logs.LogGroup };
@@ -187,7 +192,7 @@ export class AcceleratorMetadata extends Construct {
       functionName,
       role,
       code,
-      runtime: cdk.aws_lambda.Runtime.NODEJS_18_X,
+      runtime: DEFAULT_LAMBDA_RUNTIME,
       timeout: cdk.Duration.minutes(10),
       handler: 'index.handler',
       environment: {
@@ -203,7 +208,7 @@ export class AcceleratorMetadata extends Construct {
         METADATA_BUCKET: props.metadataLogBucketName,
         ACCELERATOR_PREFIX: props.acceleratorPrefix,
         GLOBAL_REGION: props.globalRegion,
-        ACCELERATOR_VERSION_SSM_PATH: `${props.acceleratorSsmParamPrefix}/${props.acceleratorPrefix}-InstallerStack/version`,
+        ACCELERATOR_VERSION_SSM_PATH: `${props.acceleratorSsmParamPrefix}/${props.installerStackName}/version`,
       },
     });
 

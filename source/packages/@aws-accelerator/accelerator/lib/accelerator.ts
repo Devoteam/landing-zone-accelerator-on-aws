@@ -45,11 +45,10 @@ import {
 } from '@aws-accelerator/utils/lib/common-functions';
 
 import { AssumeProfilePlugin } from '@aws-cdk-extensions/cdk-plugin-assume-role';
-import { isBeforeBootstrapStage, writeImportResources } from '../utils/app-utils';
+import { getReplacementsConfig, isBeforeBootstrapStage, writeImportResources } from '../utils/app-utils';
 import { AcceleratorStage } from './accelerator-stage';
 import { AcceleratorToolkit, AcceleratorToolkitProps } from './toolkit';
 import { v4 as uuidv4 } from 'uuid';
-import { getReplacementsConfig } from '../utils/app-utils';
 import * as path from 'path';
 import { Regions } from '@aws-accelerator/utils/lib/regions';
 
@@ -193,6 +192,14 @@ export abstract class Accelerator {
       await globalConfig.loadExternalMapping(accountsConfig);
       logger.info('Loaded ASEA mapping');
     }
+
+    const shouldPerformNetworkRefactor = globalConfig?.cdkOptions?.stackRefactor?.networkVpcStack ?? false;
+
+    if (shouldPerformNetworkRefactor && props.stage !== AcceleratorStage.NETWORK_VPC && props.command !== 'synth') {
+      logger.info('Accelerator NetworkVpc Stack Refactor in progress, execution skipped.');
+      return;
+    }
+
     await checkDiffStage(props);
 
     //
@@ -256,6 +263,13 @@ export abstract class Accelerator {
     //
     if (this.isSingleStackAction(props)) {
       await this.executeSingleStack(props, toolkitProps);
+
+      //
+      // Perform network refactor - diff set
+      //
+      if (shouldPerformNetworkRefactor && props.command === 'synth' && props.stage === AcceleratorStage.NETWORK_VPC) {
+        logger.info('NetworkVpc Stack Refactor diff set will be calculated here.');
+      }
     } else {
       //
       // Initialize array to enumerate promises created for parallel stack creation
@@ -355,6 +369,13 @@ export abstract class Accelerator {
         }
 
         enabledRegions = [props.region as Region];
+      }
+
+      //
+      // Perform network refactor - execute refactor
+      //
+      if (shouldPerformNetworkRefactor && props.command === 'deploy' && props.stage === AcceleratorStage.NETWORK_VPC) {
+        logger.info('NetworkVpc Stack Refactor will be executed here.');
       }
       //
       // Execute all remaining stages
@@ -746,7 +767,6 @@ export abstract class Accelerator {
         region: logArchiveAccountDetails.centralizedLoggingRegion,
         ...toolkitProps,
       });
-
       // Execute in all other regions in the LogArchive account
       await this.executeLogArchiveNonCentralRegions(
         toolkitProps,
@@ -805,9 +825,14 @@ export abstract class Accelerator {
     enabledRegions: string[],
     maxStacks: number,
   ) {
-    const nonLogArchiveAccounts = [...accountsConfig.mandatoryAccounts, ...accountsConfig.workloadAccounts].filter(
+    let nonLogArchiveAccounts = [...accountsConfig.mandatoryAccounts, ...accountsConfig.workloadAccounts].filter(
       accountItem => accountItem.name !== logArchiveAccountDetails.name,
     );
+
+    // Avoid changeset collisions by reducing total accounts to 1
+    if (toolkitProps.enableSingleAccountMode) {
+      nonLogArchiveAccounts = [accountsConfig.mandatoryAccounts[0]];
+    }
 
     for (const region of enabledRegions) {
       for (const account of nonLogArchiveAccounts) {
@@ -1022,9 +1047,13 @@ export abstract class Accelerator {
     enabledRegions: string[],
     maxStacks: number,
   ) {
-    const nonManagementAccounts = [...accountsConfig.mandatoryAccounts, ...accountsConfig.workloadAccounts].filter(
+    let nonManagementAccounts = [...accountsConfig.mandatoryAccounts, ...accountsConfig.workloadAccounts].filter(
       accountItem => accountItem.name !== managementAccountName,
     );
+    // Avoid changeset collisions by reducing total accounts to 1
+    if (toolkitProps.enableSingleAccountMode) {
+      nonManagementAccounts = [accountsConfig.mandatoryAccounts[0]];
+    }
 
     for (const region of enabledRegions) {
       for (const account of nonManagementAccounts) {

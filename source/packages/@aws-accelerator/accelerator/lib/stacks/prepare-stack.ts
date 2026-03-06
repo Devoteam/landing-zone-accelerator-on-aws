@@ -16,6 +16,7 @@ import { SnsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { Construct } from 'constructs';
 import * as fs from 'fs';
 import path from 'path';
+import { DEFAULT_LAMBDA_RUNTIME } from '../../../utils/lib/lambda';
 
 import {
   Account,
@@ -445,6 +446,7 @@ export class PrepareStack extends AcceleratorStack {
       logRetentionInDays: options.props.globalConfig.cloudwatchLogRetentionInDays,
       driftDetectionParameter: options.driftDetectedParameter,
       driftDetectionMessageParameter: options.driftMessageParameter,
+      prefixes: this.props.prefixes,
       vpcsCidrs,
     });
 
@@ -562,7 +564,7 @@ export class PrepareStack extends AcceleratorStack {
       // resources for control tower lifecycle events
       const controlTowerOuEventsFunction = new cdk.aws_lambda.Function(this, 'ControlTowerOuEventsFunction', {
         code: cdk.aws_lambda.Code.fromAsset(path.join(__dirname, '../lambdas/control-tower-ou-events/dist')),
-        runtime: cdk.aws_lambda.Runtime.NODEJS_18_X,
+        runtime: DEFAULT_LAMBDA_RUNTIME,
         handler: 'index.handler',
         description: 'Lambda function to process ControlTower OU events from CloudTrail',
         timeout: cdk.Duration.minutes(5),
@@ -656,7 +658,7 @@ export class PrepareStack extends AcceleratorStack {
       // function to process control tower notifications
       const controlTowerNotificationsFunction = new cdk.aws_lambda.Function(this, 'ControlTowerNotificationsFunction', {
         code: cdk.aws_lambda.Code.fromAsset(path.join(__dirname, '../lambdas/control-tower-notifications/dist')),
-        runtime: cdk.aws_lambda.Runtime.NODEJS_18_X,
+        runtime: DEFAULT_LAMBDA_RUNTIME,
         handler: 'index.handler',
         description: 'Lambda function to process ControlTower notifications from audit account',
         timeout: cdk.Duration.minutes(5),

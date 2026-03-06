@@ -607,6 +607,10 @@ export class SecurityResourcesStack extends AcceleratorStack {
       return `arn:${cdk.Stack.of(this).partition}:iam::${cdk.Stack.of(this).account}:role/${
         this.props.prefixes.accelerator
       }ConfigRecorderRole`;
+    } else if (this.props.securityConfig.awsConfig.useServiceLinkedRole === true) {
+      return `arn:${cdk.Stack.of(this).partition}:iam::${
+        cdk.Stack.of(this).account
+      }:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig`;
     }
     const configRecorderRole = new cdk.aws_iam.Role(this, 'ConfigRecorderRole', {
       assumedBy: new cdk.aws_iam.ServicePrincipal('config.amazonaws.com'),
@@ -682,8 +686,13 @@ export class SecurityResourcesStack extends AcceleratorStack {
    */
   private createManagedConfigRule(rule: ConfigRule): CustomConfigRuleType {
     const resourceTypes: cdk.aws_config.ResourceType[] = [];
+    let ruleScope: cdk.aws_config.RuleScope | undefined = undefined;
     for (const resourceType of rule.complianceResourceTypes ?? []) {
       resourceTypes.push(cdk.aws_config.ResourceType.of(resourceType));
+    }
+
+    if (resourceTypes.length > 0) {
+      ruleScope = { resourceTypes };
     }
 
     const managedConfigRule = new cdk.aws_config.ManagedRule(this, pascalCase(rule.name), {
@@ -691,9 +700,7 @@ export class SecurityResourcesStack extends AcceleratorStack {
       description: rule.description,
       identifier: rule.identifier ?? rule.name,
       inputParameters: this.getRuleParameters(rule.name, rule.inputParameters),
-      ruleScope: {
-        resourceTypes,
-      },
+      ruleScope,
     });
 
     return managedConfigRule;

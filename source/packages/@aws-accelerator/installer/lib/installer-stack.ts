@@ -19,10 +19,11 @@ import * as path from 'path';
 
 import { Bucket, BucketEncryptionType } from '@aws-accelerator/constructs';
 
-import { version } from '../../../../package.json';
-import { SolutionHelper } from './solutions-helper';
+import { version, config } from '../../../../package.json';
 import { ResourceNamePrefixes } from './resource-name-prefixes';
+import { SolutionHelper } from './solutions-helper';
 import { Validate } from './validate';
+import { LzaLambdaRuntime } from '@aws-accelerator/utils/lib/lambda';
 
 export enum RepositorySources {
   GITHUB = 'github',
@@ -64,6 +65,10 @@ export interface InstallerStackProps extends cdk.StackProps {
    * Region by region deployment usage flag
    */
   readonly enableRegionByRegionDeployment: boolean;
+  /**
+   * Set node version
+   */
+  readonly setNodeVersion: boolean;
 }
 
 export class InstallerStack extends cdk.Stack {
@@ -271,6 +276,12 @@ export class InstallerStack extends cdk.Stack {
    */
   private readonly regionByRegionDeployOrder: cdk.CfnParameter | undefined;
 
+  /**
+   * Accelerator node version
+   * @private
+   */
+  private readonly acceleratorNodeVersion: cdk.CfnParameter | undefined;
+
   constructor(scope: Construct, id: string, props: InstallerStackProps) {
     super(scope, id, props);
 
@@ -372,6 +383,38 @@ export class InstallerStack extends cdk.Stack {
     let targetAcceleratorEnvVariables: { [p: string]: cdk.aws_codebuild.BuildEnvironmentVariable } = {};
     let s3EnvVariables: { [p: string]: cdk.aws_codebuild.BuildEnvironmentVariable } = {};
 
+    /**
+     * `nodeVersion` configures the Node.js version for the accelerator.
+     *
+     * This code block determines and sets the Node.js version to be used throughout the accelerator solution.
+     * It updates relevant CloudFormation parameters and environment variables based on the configuration.
+     * The resulting `nodeVersion` will be used in the rest of the application for lambda function and codebuild nodejs.
+     *
+     */
+    let nodeVersion = config.node.version.default.toString();
+
+    if (props.setNodeVersion) {
+      this.acceleratorNodeVersion = new cdk.CfnParameter(this, 'AcceleratorNodeVersion', {
+        type: 'String',
+        description: 'Set the node version in solution. For example, 20 would set node version to 20 in the solution.',
+      });
+
+      parameterGroups.push({
+        Label: { default: 'Node Version Configuration' },
+        Parameters: [this.acceleratorNodeVersion.logicalId],
+      });
+      targetAcceleratorEnvVariables = {
+        ...targetAcceleratorEnvVariables,
+        ACCELERATOR_NODE_VERSION: {
+          type: cdk.aws_codebuild.BuildEnvironmentVariableType.PLAINTEXT,
+          value: this.acceleratorNodeVersion.valueAsString,
+        },
+      };
+      nodeVersion = this.acceleratorNodeVersion.valueAsString;
+    }
+
+    const lambdaRuntime = LzaLambdaRuntime.getLambdaRuntime(nodeVersion);
+
     if (props.enableRegionByRegionDeployment) {
       this.regionByRegionDeployOrder = new cdk.CfnParameter(this, 'RegionByRegionDeployOrder', {
         type: 'String',
@@ -429,9 +472,11 @@ export class InstallerStack extends cdk.Stack {
     if (props.useExternalPipelineAccount) {
       this.acceleratorQualifier = new cdk.CfnParameter(this, 'AcceleratorQualifier', {
         type: 'String',
-        description: 'Accelerator assets arn qualifier',
+        description:
+          'Names the resources in the external deployment account. This must be unique for each LZA pipeline created in a single external deployment account, for example "env2" or "app1." Do not use "aws-accelerator" or a similar value that could be confused with the prefix."',
         allowedPattern: '^[a-z]+[a-z0-9-]{1,61}[a-z0-9]+$',
-        constraintDescription: 'Qualifier must include lowercase letters and numbers only',
+        constraintDescription:
+          'Qualifier must include lowercase letters and numbers only and cannot be aws-accelerator',
       });
 
       this.managementAccountId = new cdk.CfnParameter(this, 'ManagementAccountId', {
@@ -540,6 +585,7 @@ export class InstallerStack extends cdk.Stack {
     const resourceNamePrefixes = new ResourceNamePrefixes(this, 'ResourceNamePrefixes', {
       acceleratorPrefix: this.acceleratorPrefix.valueAsString,
       acceleratorQualifier: this.acceleratorQualifier?.valueAsString,
+      lambdaRuntime,
     });
     // cfn-nag suppression
     const resourceNameFunctionResource = resourceNamePrefixes.node.findChild('ResourceNamePrefixesFunction').node
@@ -655,6 +701,7 @@ export class InstallerStack extends cdk.Stack {
     const validatorFunction = new Validate(this, 'ValidateInstaller', {
       acceleratorPipelineName: acceleratorPipelineName,
       configRepositoryLocation: this.configurationRepositoryLocation.valueAsString,
+      lambdaRuntime,
     });
     // cfn-nag suppression
     const validatorFunctionResource = validatorFunction.node.findChild('ValidationFunction').node
@@ -713,6 +760,7 @@ export class InstallerStack extends cdk.Stack {
       repositoryOwner: this.repositoryOwner,
       repositoryBranchName: this.repositoryBranchName,
       repositoryName: this.repositoryName,
+      lambdaRuntime,
     });
 
     // Create Accelerator Installer KMS Key
@@ -883,7 +931,7 @@ export class InstallerStack extends cdk.Stack {
         phases: {
           install: {
             'runtime-versions': {
-              nodejs: 18,
+              nodejs: nodeVersion,
             },
           },
           pre_build: {
@@ -1095,6 +1143,7 @@ export class InstallerStack extends cdk.Stack {
           branch: this.repositoryBranchName.valueAsString,
           output: acceleratorRepoArtifact,
           trigger: cdk.aws_codepipeline_actions.CodeCommitTrigger.NONE,
+          role: codeCommitPipelineRole,
         }),
       ],
     });
@@ -1124,14 +1173,6 @@ export class InstallerStack extends cdk.Stack {
 
     const cfnCodeCommitPipeline = codeCommitPipeline.node.defaultChild as cdk.aws_codepipeline.CfnPipeline;
     cfnCodeCommitPipeline.cfnOptions.condition = useCodeCommitCondition;
-
-    const cfnCodeCommitPipelineSource = codeCommitPipeline.node
-      .findChild('Source')
-      .node.findChild('Source')
-      .node.findChild('CodePipelineActionRole').node;
-    (cfnCodeCommitPipelineSource.defaultChild as cdk.CfnResource).cfnOptions.condition = useCodeCommitCondition;
-    (cfnCodeCommitPipelineSource.findChild('DefaultPolicy').node.defaultChild as cdk.CfnResource).cfnOptions.condition =
-      useCodeCommitCondition;
 
     /**
      * GitHub Pipeline
@@ -1238,7 +1279,7 @@ export class InstallerStack extends cdk.Stack {
 
     const updatePipelineGithubTokenFunction = new cdk.aws_lambda.Function(this, 'UpdatePipelineGithubTokenFunction', {
       code: new cdk.aws_lambda.InlineCode(fileContents.toString()),
-      runtime: cdk.aws_lambda.Runtime.NODEJS_18_X,
+      runtime: lambdaRuntime,
       handler: 'index.handler',
       description: 'Lambda function to update CodePipeline OAuth Token',
       timeout: cdk.Duration.minutes(1),

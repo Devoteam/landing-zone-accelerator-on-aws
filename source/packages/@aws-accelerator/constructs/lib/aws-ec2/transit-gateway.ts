@@ -17,6 +17,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { TransitGatewayAttachmentOptionsConfig } from '@aws-accelerator/config';
 import { LzaCustomResource } from '../lza-custom-resource';
+import { CUSTOM_RESOURCE_PROVIDER_RUNTIME } from '@aws-accelerator/utils/lib/lambda';
 
 const path = require('path');
 
@@ -174,6 +175,7 @@ export interface TransitGatewayAttachmentLookupOptions {
   readonly transitGatewayId: string;
   readonly type: TransitGatewayAttachmentType;
   readonly roleName?: string;
+  readonly isSameAccountRegionAccepter?: boolean;
   /**
    * Custom resource lambda log group encryption key, when undefined default AWS managed key will be used
    */
@@ -232,7 +234,7 @@ export class TransitGatewayAttachment extends TransitGatewayAttachmentBase {
 
         const provider = cdk.CustomResourceProvider.getOrCreateProvider(this, GET_TRANSIT_GATEWAY_ATTACHMENT, {
           codeDirectory: path.join(__dirname, 'get-transit-gateway-attachment/dist'),
-          runtime: cdk.CustomResourceProviderRuntime.NODEJS_18_X,
+          runtime: CUSTOM_RESOURCE_PROVIDER_RUNTIME,
           policyStatements: [
             {
               Effect: 'Allow',
@@ -268,6 +270,7 @@ export class TransitGatewayAttachment extends TransitGatewayAttachmentBase {
             name: options.name,
             transitGatewayId: options.transitGatewayId,
             type: options.type,
+            isSameAccountRegionAccepter: options.isSameAccountRegionAccepter,
             roleArn,
             uuid: uuidv4(), // Generates a new UUID to force the resource to update
             crossAccountVpnOptions: options.crossAccountVpnOptions,

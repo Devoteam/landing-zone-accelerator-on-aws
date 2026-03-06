@@ -10,19 +10,33 @@
  *  OR CONDITIONS OF ANY KIND, express or implied. See the License for the specific language governing permissions
  *  and limitations under the License.
  */
-
 import {
+  Account,
+  DescribeOrganizationCommand,
+  InvalidInputException,
+  ListRootsCommand,
   OrganizationalUnit,
   OrganizationsClient,
+  paginateListAccounts,
   paginateListOrganizationalUnitsForParent,
 } from '@aws-sdk/client-organizations';
-import { ControlTowerClient, GetLandingZoneCommand, ListLandingZonesCommand } from '@aws-sdk/client-controltower';
+import {
+  ControlTowerClient,
+  GetLandingZoneCommand,
+  ListLandingZonesCommand,
+  ResourceNotFoundException,
+} from '@aws-sdk/client-controltower';
 import { AssumeRoleCommand, GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { ConfiguredRetryStrategy } from '@aws-sdk/util-retry';
-
+import { MODULE_EXCEPTIONS } from '../common/enums';
 import path from 'path';
 
-import { IAssumeRoleCredential, ControlTowerLandingZoneDetailsType } from './resources';
+import {
+  IAssumeRoleCredential,
+  ControlTowerLandingZoneDetailsType,
+  IModuleDefaultParameter,
+  IModuleCommonParameter,
+} from './resources';
 import { createLogger } from './logger';
 import { throttlingBackOff } from './throttle';
 
@@ -30,6 +44,34 @@ import { throttlingBackOff } from './throttle';
  * Logger
  */
 const logger = createLogger([path.parse(path.basename(__filename)).name]);
+
+/**
+ * Function to generate dry run response
+ * @param moduleName string
+ * @param operation string
+ * @param message string
+ * @returns string
+ */
+export function generateDryRunResponse(moduleName: string, operation: string, message: string): string {
+  const statusPrefix = `[DRY-RUN]: ${moduleName} ${operation} (no actual changes were made)\nValidation: ✓ Successful\nStatus: `;
+  return `${statusPrefix}${message}`;
+}
+
+/**
+ * Function to get default parameters for module
+ * @param moduleName string
+ * @param props {@link IModuleCommonParameter}
+ * @returns props  {@link IModuleDefaultParameter}
+ */
+export function getModuleDefaultParameters(moduleName: string, props: IModuleCommonParameter): IModuleDefaultParameter {
+  const defaultParameters: IModuleDefaultParameter = {
+    moduleName: props.moduleName ?? moduleName,
+    globalRegion: props.globalRegion ?? props.region,
+    useExistingRole: props.useExistingRole ?? false,
+    dryRun: props.dryRun ?? false,
+  };
+  return defaultParameters;
+}
 
 export function setRetryStrategy() {
   const numberOfRetries = Number(process.env['ACCELERATOR_SDK_MAX_ATTEMPTS'] ?? 800);
@@ -48,13 +90,21 @@ export async function getOrganizationalUnitsForParent(
 ): Promise<OrganizationalUnit[]> {
   const organizationalUnits: OrganizationalUnit[] = [];
 
-  const paginator = paginateListOrganizationalUnitsForParent({ client }, { ParentId: parentId });
-  for await (const page of paginator) {
-    for (const organizationalUnit of page.OrganizationalUnits ?? []) {
-      organizationalUnits.push(organizationalUnit);
+  try {
+    const paginator = paginateListOrganizationalUnitsForParent({ client }, { ParentId: parentId });
+    for await (const page of paginator) {
+      for (const organizationalUnit of page.OrganizationalUnits ?? []) {
+        organizationalUnits.push(organizationalUnit);
+      }
     }
+    return organizationalUnits;
+  } catch (e: unknown) {
+    if (e instanceof InvalidInputException) {
+      logger.warn(`${e.name}: Invalid parent id: ${parentId} - ${e.message}`);
+      throw new Error(`${e.name}: Invalid parent id: ${parentId}`);
+    }
+    throw e;
   }
-  return organizationalUnits;
 }
 
 /**
@@ -71,15 +121,20 @@ export async function getOrganizationalUnitsForParent(
 export async function getLandingZoneIdentifier(client: ControlTowerClient): Promise<string | undefined> {
   const response = await throttlingBackOff(() => client.send(new ListLandingZonesCommand({})));
 
-  if (response.landingZones!.length! > 1) {
-    throw new Error(
-      `Multiple AWS Control Tower Landing Zone configuration found, list of Landing Zone arns are - ${response.landingZones?.join(
+  if (!response.landingZones) {
+    throw new Error(`Internal error: ListLandingZonesCommand did not return landingZones object`);
+  }
+
+  if (response.landingZones.length > 1) {
+    logger.warn(
+      `Internal error: ListLandingZonesCommand returned multiple landing zones, list of Landing Zone arns are - ${response.landingZones.join(
         ',',
       )}`,
     );
+    throw new Error(`Internal error: ListLandingZonesCommand returned multiple landing zones`);
   }
 
-  if (response.landingZones?.length === 1 && response.landingZones[0].arn) {
+  if (response.landingZones.length === 1 && response.landingZones[0].arn) {
     return response.landingZones[0].arn;
   }
 
@@ -142,7 +197,7 @@ export async function getLandingZoneDetails(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     e: any
   ) {
-    if (e.name === 'ResourceNotFoundException' && landingZoneIdentifier) {
+    if (e instanceof ResourceNotFoundException && landingZoneIdentifier) {
       throw new Error(
         `Existing AWS Control Tower Landing Zone home region differs from the executing environment region ${region}. Existing Landing Zone identifier is ${landingZoneIdentifier}`,
       );
@@ -170,7 +225,7 @@ export async function delay(minutes: number) {
 export async function getCredentials(options: {
   accountId: string;
   region: string;
-  solutionId: string;
+  solutionId?: string;
   partition?: string;
   assumeRoleName?: string;
   assumeRoleArn?: string;
@@ -214,14 +269,18 @@ export async function getCredentials(options: {
 
   //
   // Validate response
-  if (!response.Credentials?.AccessKeyId) {
-    throw new Error(`Access key ID not returned from AssumeRole command`);
+  if (!response.Credentials) {
+    throw new Error(`Internal error: AssumeRoleCommand did not return Credentials`);
+  }
+
+  if (!response.Credentials.AccessKeyId) {
+    throw new Error(`Internal error: AssumeRoleCommand did not return AccessKeyId`);
   }
   if (!response.Credentials.SecretAccessKey) {
-    throw new Error(`Secret access key not returned from AssumeRole command`);
+    throw new Error(`Internal error: AssumeRoleCommand did not return SecretAccessKey`);
   }
   if (!response.Credentials.SessionToken) {
-    throw new Error(`Session token not returned from AssumeRole command`);
+    throw new Error(`Internal error: AssumeRoleCommand did not return SessionToken`);
   }
 
   return {
@@ -230,4 +289,213 @@ export async function getCredentials(options: {
     sessionToken: response.Credentials.SessionToken,
     expiration: response.Credentials.Expiration,
   };
+}
+
+/**
+ * Function to get root id
+ * @param client {@link OrganizationsClient}
+ * @returns string
+ */
+export async function getOrganizationRootId(client: OrganizationsClient): Promise<string> {
+  const response = await throttlingBackOff(() => client.send(new ListRootsCommand({})));
+
+  if (!response.Roots) {
+    throw new Error(`${MODULE_EXCEPTIONS.SERVICE_EXCEPTION}: ListRootsCommand api didn't return Roots object.`);
+  }
+
+  if (response.Roots.length !== 1) {
+    throw new Error(
+      `${MODULE_EXCEPTIONS.SERVICE_EXCEPTION}: ListRootsCommand api returned multiple Roots or no Roots.`,
+    );
+  }
+
+  const rootId = response.Roots[0].Id;
+
+  if (!rootId) {
+    throw new Error(`${MODULE_EXCEPTIONS.SERVICE_EXCEPTION}: ListRootsCommand api didn't return root id.`);
+  }
+
+  return rootId;
+}
+
+/**
+ * Function to get Organizational unit id by path
+ * @param client {@link OrganizationsClient}
+ * @param ouPath string
+ * @returns string
+ */
+export async function getOrganizationalUnitIdByPath(
+  client: OrganizationsClient,
+  ouPath: string,
+): Promise<string | undefined> {
+  if (ouPath.replace(/\/+$/, '').toLowerCase() === 'root') {
+    return await getOrganizationRootId(client);
+  }
+
+  const ouNames = ouPath.replace(/\/+$/, '').split('/');
+
+  let emptyPathId: string | undefined;
+  if (ouPath.length === 0) {
+    emptyPathId = undefined;
+  } else {
+    let currentParentId = await getOrganizationRootId(client);
+    const isTopLevelOuNameRoot = ouNames[0].toLowerCase() === 'root';
+    const startIndex = isTopLevelOuNameRoot ? 1 : 0;
+
+    for (let i = startIndex; i < ouNames.length; i++) {
+      const currentOuName = ouNames[i];
+
+      const ous = await getOrganizationalUnitsForParent(client, currentParentId);
+
+      const matchingOu = ous.find(ou => ou.Name!.toLowerCase() === currentOuName.toLowerCase());
+
+      if (!matchingOu) {
+        return undefined;
+      }
+
+      if (i === ouNames.length - 1) {
+        return matchingOu.Id;
+      }
+
+      currentParentId = matchingOu.Id!;
+    }
+  }
+
+  return emptyPathId;
+}
+
+/**
+ * Function to get parent OU id
+ * @param client {@link OrganizationsClient}
+ * @param parentOuName string
+ * @returns string | undefined
+ */
+export async function getParentOuId(client: OrganizationsClient, parentOuName: string): Promise<string | undefined> {
+  if (parentOuName === 'Root') {
+    return await getOrganizationRootId(client);
+  }
+  return await getOrganizationalUnitIdByPath(client, parentOuName);
+}
+
+/**
+ * Function to get AWS Organizations accounts
+ * @param client {@link OrganizationsClient}
+ * @returns accounts {@link Account}[]
+ */
+export async function getOrganizationAccounts(client: OrganizationsClient): Promise<Account[]> {
+  const accounts: Account[] = [];
+  const paginator = paginateListAccounts({ client }, {});
+  for await (const page of paginator) {
+    for (const account of page.Accounts ?? []) {
+      accounts.push(account);
+    }
+  }
+
+  return accounts;
+}
+
+/**
+ * Function to get Account details from AWS Organizations by email
+ * @param client {@link OrganizationsClient}
+ * @param accountEmail string
+ * @returns Account | undefined
+ */
+export async function getAccountDetailsFromOrganizations(
+  client: OrganizationsClient,
+  accountEmail: string,
+): Promise<Account | undefined> {
+  const accounts = await getOrganizationAccounts(client);
+
+  for (const account of accounts) {
+    if (account.Email && account.Email.toLowerCase() === accountEmail.toLowerCase()) {
+      return account;
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Function to get account id by email
+ * @param client {@link OrganizationsClient}
+ * @param email string
+ * @returns string
+ */
+export async function getAccountId(client: OrganizationsClient, email: string): Promise<string> {
+  const accountDetailsFromOrganizations = await getAccountDetailsFromOrganizations(client, email);
+  if (!accountDetailsFromOrganizations) {
+    throw new Error(
+      `${MODULE_EXCEPTIONS.INVALID_INPUT}: Account with email "${email}" not found in AWS Organizations.`,
+    );
+  }
+
+  if (!accountDetailsFromOrganizations.Id) {
+    throw new Error(
+      `${MODULE_EXCEPTIONS.SERVICE_EXCEPTION}: ListAccounts api did not return the Account object Id property for the account with email "${email}".`,
+    );
+  }
+
+  return accountDetailsFromOrganizations.Id;
+}
+
+/**
+ * Function to get organization id
+ * @param client {@link OrganizationsClient}
+ * @returns string
+ */
+export async function getOrganizationId(client: OrganizationsClient): Promise<string> {
+  const response = await throttlingBackOff(() => client.send(new DescribeOrganizationCommand({})));
+
+  if (!response.Organization) {
+    throw new Error(
+      `${MODULE_EXCEPTIONS.SERVICE_EXCEPTION}: DescribeOrganizationCommand api did not return Organization object.`,
+    );
+  }
+
+  if (!response.Organization.Id) {
+    throw new Error(
+      `${MODULE_EXCEPTIONS.SERVICE_EXCEPTION}: DescribeOrganizationCommand api did not return Organization object Id property.`,
+    );
+  }
+
+  return response.Organization.Id;
+}
+
+/**
+ * Function to get current account id
+ * @param client {@link STSClient}
+ * @returns string
+ */
+export async function getCurrentAccountId(client: STSClient): Promise<string> {
+  const response = await throttlingBackOff(() => client.send(new GetCallerIdentityCommand({})));
+
+  if (!response.Account) {
+    throw new Error(
+      `${MODULE_EXCEPTIONS.SERVICE_EXCEPTION}: GetCallerIdentityCommand api did not return Account property.`,
+    );
+  }
+
+  return response.Account;
+}
+
+/**
+ * Function to get organizational unit arn
+ * @param organizationClient {@link OrganizationsClient}
+ * @param stsClient {@link STSClient}
+ * @param ouId string
+ * @param partition string
+ * @param organizationId string | undefined
+ * @returns string
+ */
+export async function getOrganizationalUnitArn(
+  organizationClient: OrganizationsClient,
+  stsClient: STSClient,
+  ouId: string,
+  partition: string,
+  organizationId?: string,
+): Promise<string> {
+  const organizationAccountId = await getCurrentAccountId(stsClient);
+  const orgId = organizationId ?? (await getOrganizationId(organizationClient));
+
+  return `arn:${partition}:organizations::${organizationAccountId}:ou/${orgId}/${ouId.toLowerCase()}`;
 }

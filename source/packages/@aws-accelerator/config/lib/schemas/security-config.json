@@ -195,6 +195,10 @@
             "$ref": "#/definitions/IAwsConfigRuleSet"
           },
           "type": "array"
+        },
+        "useServiceLinkedRole": {
+          "description": "Indicates whether to create the Configuration Recorder with a service linked role. If not specified, AWS Config will use a custom IAM role created by LZA. For new deployments, it is recommended to set this setting to true. For more information, see https://docs.aws.amazon.com/config/latest/developerguide/using-service-linked-roles.html",
+          "type": "boolean"
         }
       },
       "required": [
@@ -250,8 +254,8 @@
         },
         "delegatedAdminAccount": {
           "$ref": "#/definitions/NonEmptyString",
-          "default": "Audit\n\nTo make Audit account as designated administrator account for every security services configured by accelerator, you need to provide below value for this parameter",
-          "description": "Designated administrator account name for accelerator security services. AWS organizations designate a member account as a delegated administrator for the organization users and roles from that account can perform administrative actions for security services like Macie, GuardDuty, Detective and Security Hub. Without designated administrator account administrative tasks for security services are performed only by users or roles in the organization's management account. This helps you to separate management of the organization from management of these security services. Accelerator use Audit account as designated administrator account."
+          "default": "Audit",
+          "description": "Designated administrator account name for accelerator security services. AWS organizations designate a member account as a delegated administrator for the organization users and roles from that account can perform administrative actions for security services like Macie, GuardDuty, Detective and Security Hub. Without designated administrator account administrative tasks for security services are performed only by users or roles in the organization's management account. This helps you to separate management of the organization from management of these security services. Accelerator currently supports using the Audit account **only** as the delegated administrator account."
         },
         "detective": {
           "$ref": "#/definitions/IDetectiveConfig",
@@ -676,6 +680,10 @@
           "$ref": "#/definitions/IDeploymentTargets",
           "description": "(OPTIONAL) Deployment targets for GuardDuty\n\nWe highly recommend enabling GuardDuty across all accounts and enabled regions within your organization. `deploymentTargets` should only be used when more granular control is required, not as a default configuration Please only specify one of the `deploymentTargets` or `excludeRegions` properties.\n\nNote: The delegated admin account defined in centralSecurityServices will always have GuardDuty enabled"
         },
+        "ec2Protection": {
+          "$ref": "#/definitions/IGuardDutyEc2ProtectionConfig",
+          "description": "(OPTIONAL) AWS GuardDuty EC2 Protection configuration."
+        },
         "eksProtection": {
           "$ref": "#/definitions/IGuardDutyEksProtectionConfig",
           "description": "(OPTIONAL) AWS GuardDuty EKS Protection configuration."
@@ -695,12 +703,20 @@
           "$ref": "#/definitions/IGuardDutyExportFindingsConfig",
           "description": "AWS GuardDuty Export Findings configuration."
         },
+        "lambdaProtection": {
+          "$ref": "#/definitions/IGuardDutyLambdaProtectionConfig",
+          "description": "(OPTIONAL) AWS GuardDuty Lambda Protection configuration."
+        },
         "lifecycleRules": {
           "description": "(OPTIONAL) Declaration of a S3 Lifecycle rule.",
           "items": {
             "$ref": "#/definitions/ILifecycleRule"
           },
           "type": "array"
+        },
+        "rdsProtection": {
+          "$ref": "#/definitions/IGuardDutyRdsProtectionConfig",
+          "description": "(OPTIONAL) AWS GuardDuty RDS Protection configuration."
         },
         "s3Protection": {
           "$ref": "#/definitions/IGuardDutyS3ProtectionConfig",
@@ -711,6 +727,32 @@
         "enable",
         "s3Protection",
         "exportConfiguration"
+      ],
+      "type": "object"
+    },
+    "IGuardDutyEc2ProtectionConfig": {
+      "additionalProperties": false,
+      "description": "AWS GuardDuty EC2 Malware Protection configuration.",
+      "properties": {
+        "enable": {
+          "description": "Indicates whether AWS GuardDuty EC2 Malware Protection is enabled.",
+          "type": "boolean"
+        },
+        "excludeRegions": {
+          "description": "(OPTIONAL) List of AWS Region names to be excluded from configuring Amazon GuardDuty EC2 Malware Protection",
+          "items": {
+            "$ref": "#/definitions/Region"
+          },
+          "type": "array"
+        },
+        "keepSnapshots": {
+          "description": "Indicates whether AWS GuardDuty EC2 Malware Protection should retain snapshots on findings.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "enable",
+        "keepSnapshots"
       ],
       "type": "object"
     },
@@ -728,6 +770,10 @@
             "$ref": "#/definitions/Region"
           },
           "type": "array"
+        },
+        "manageAgent": {
+          "description": "Indicates whether AWS GuardDuty EKS Agent is managed.",
+          "type": "boolean"
         }
       },
       "required": [
@@ -770,6 +816,48 @@
         "enable",
         "destinationType",
         "exportFrequency"
+      ],
+      "type": "object"
+    },
+    "IGuardDutyLambdaProtectionConfig": {
+      "additionalProperties": false,
+      "description": "AWS GuardDuty Lambda Malware Protection configuration.",
+      "properties": {
+        "enable": {
+          "description": "Indicates whether AWS GuardDuty Lambda Malware Protection is enabled.",
+          "type": "boolean"
+        },
+        "excludeRegions": {
+          "description": "(OPTIONAL) List of AWS Region names to be excluded from configuring Amazon GuardDuty Lambda Malware Protection",
+          "items": {
+            "$ref": "#/definitions/Region"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "enable"
+      ],
+      "type": "object"
+    },
+    "IGuardDutyRdsProtectionConfig": {
+      "additionalProperties": false,
+      "description": "AWS GuardDuty RDS Malware Protection configuration.",
+      "properties": {
+        "enable": {
+          "description": "Indicates whether AWS GuardDuty RDS Malware Protection is enabled.",
+          "type": "boolean"
+        },
+        "excludeRegions": {
+          "description": "(OPTIONAL) List of AWS Region names to be excluded from configuring Amazon GuardDuty RDS Malware Protection",
+          "items": {
+            "$ref": "#/definitions/Region"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "enable"
       ],
       "type": "object"
     },
@@ -1476,14 +1564,16 @@
           "type": "boolean"
         },
         "name": {
-          "description": "An enum value that specifies one of three security standards supported by Security Hub Possible values are 'AWS Foundational Security Best Practices v1.0.0', 'CIS AWS Foundations Benchmark v1.2.0', 'CIS AWS Foundations Benchmark v1.4.0', 'CIS AWS Foundations Benchmark v3.0.0', 'NIST Special Publication 800-53 Revision 5, and 'PCI DSS v3.2.1'",
+          "description": "An enum value that specifies one of three security standards supported by Security Hub Possible values are 'AWS Foundational Security Best Practices v1.0.0', 'CIS AWS Foundations Benchmark v1.2.0', 'CIS AWS Foundations Benchmark v1.4.0', 'CIS AWS Foundations Benchmark v3.0.0', 'NIST Special Publication 800-53 Revision 5', 'AWS Resource Tagging Standard v1.0.0' 'PCI DSS v4.0.1', and 'PCI DSS v3.2.1'",
           "enum": [
             "AWS Foundational Security Best Practices v1.0.0",
             "CIS AWS Foundations Benchmark v1.2.0",
             "CIS AWS Foundations Benchmark v1.4.0",
             "CIS AWS Foundations Benchmark v3.0.0",
             "NIST Special Publication 800-53 Revision 5",
+            "AWS Resource Tagging Standard v1.0.0",
             "PCI DSS v3.2.1",
+            "PCI DSS v4.0.1",
             ""
           ],
           "type": "string"
@@ -1650,6 +1740,7 @@
         "il-central-1",
         "me-central-1",
         "me-south-1",
+        "mx-central-1",
         "sa-east-1",
         "us-east-1",
         "us-east-2",

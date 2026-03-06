@@ -10,6 +10,7 @@
  *  OR CONDITIONS OF ANY KIND, express or implied. See the License for the specific language governing permissions
  *  and limitations under the License.
  */
+import { CUSTOM_RESOURCE_PROVIDER_RUNTIME } from '@aws-accelerator/utils/lib/lambda';
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as path from 'path';
@@ -70,6 +71,10 @@ export interface VirtualInterfaceProps {
    *
    */
   readonly amazonAddress?: string;
+  /**
+   * The BGP Authentication Key for this virtual interface
+   */
+  readonly authKey?: string;
   /**
    * The customer side peer IP address to use for this virtual interface
    */
@@ -158,12 +163,18 @@ export class VirtualInterface extends cdk.Resource implements IVirtualInterface 
           Action: ['lambda:InvokeFunction'],
           Resource: `arn:${cdk.Aws.PARTITION}:lambda:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:function:${props.acceleratorPrefix}-NetworkPre-CustomDirectConnect*`,
         },
+        {
+          Sid: 'GetSecret',
+          Effect: 'Allow',
+          Action: ['secretsmanager:GetSecretValue', 'kms:Decrypt'],
+          Resource: '*',
+        },
       ];
     }
 
     const provider = cdk.CustomResourceProvider.getOrCreateProvider(this, RESOURCE_TYPE, {
       codeDirectory,
-      runtime: cdk.CustomResourceProviderRuntime.NODEJS_18_X,
+      runtime: CUSTOM_RESOURCE_PROVIDER_RUNTIME,
       policyStatements,
       timeout: cdk.Duration.minutes(15),
     });
@@ -181,6 +192,7 @@ export class VirtualInterface extends cdk.Resource implements IVirtualInterface 
         vlan: props.vlan,
         addressFamily: props.addressFamily ?? 'ipv4',
         amazonAddress: props.amazonAddress,
+        authKey: props.authKey,
         customerAddress: props.customerAddress,
         enableSiteLink: props.enableSiteLink ?? false,
         jumboFrames: props.jumboFrames ?? false,

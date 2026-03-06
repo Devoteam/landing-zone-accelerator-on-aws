@@ -23,7 +23,7 @@ enum RESOURCE_TYPE {
   TGW_ATTACHMENT = 'AWS::EC2::TransitGatewayAttachment',
   TGW_PEERING_ATTACHMENT = 'Custom::TGWCreatePeeringAttachment',
 }
-const ASEA_PHASE_NUMBERS = ['0', '1', '3'];
+const ASEA_PHASE_NUMBERS = ['0', '1', '2', '3'];
 
 export class TransitGatewayRoutes extends AseaResource {
   props: AseaResourceProps;
@@ -133,13 +133,13 @@ export class TransitGatewayRoutes extends AseaResource {
     const tgwAccepterRouteTables = tgwAccepterResources.getResourcesByType(RESOURCE_TYPE.TGW_ROUTE_TABLE);
     this.allGlobalRouteTables.push(...tgwAccepterRouteTables);
 
-    this.allGlobalRouteTables.map(allGlobalRouteTable => {
+    this.allGlobalRouteTables.forEach(allGlobalRouteTable => {
       const tags = allGlobalRouteTable.resourceMetadata['Properties'].Tags;
       const name = tags.find((tag: { Key: string; Value: string }) => tag.Key === 'Name').Value;
       this.transitGatewayGlobalRouteTables.set(name, allGlobalRouteTable.physicalResourceId!);
     });
 
-    this.allGlobalTgwPeeringAttachments.map(allGlobalTgwPeeringAttachment => {
+    this.allGlobalTgwPeeringAttachments.forEach(allGlobalTgwPeeringAttachment => {
       const tgwAttachmentId = allGlobalTgwPeeringAttachment.physicalResourceId;
       const tgwAttachmentName = allGlobalTgwPeeringAttachment.resourceMetadata['Properties'].tagValue;
       if (tgwAttachmentId) {
@@ -388,12 +388,20 @@ export class TransitGatewayRoutes extends AseaResource {
     destination?: string,
     blackhole?: boolean,
   ) {
+    if (blackhole) {
+      const route = this.allRoutes.find(
+        ({ resourceMetadata }) =>
+          resourceMetadata['Properties'].TransitGatewayRouteTableId === transitGatewayRouteTableId &&
+          resourceMetadata['Properties'].DestinationCidrBlock === destination &&
+          resourceMetadata['Properties'].Blackhole === true,
+      );
+      return route?.physicalResourceId;
+    }
     const route = this.allRoutes.find(
       ({ resourceMetadata }) =>
         resourceMetadata['Properties'].TransitGatewayRouteTableId === transitGatewayRouteTableId &&
         resourceMetadata['Properties'].TransitGatewayAttachmentId === transitGatewayAttachmentId &&
-        ((destination && resourceMetadata['Properties'].DestinationCidrBlock === destination) ||
-          (blackhole && resourceMetadata['Properties'].Blackhole)),
+        resourceMetadata['Properties'].DestinationCidrBlock === destination,
     );
     return route?.physicalResourceId;
   }

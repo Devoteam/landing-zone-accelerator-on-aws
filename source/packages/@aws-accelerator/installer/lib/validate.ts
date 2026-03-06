@@ -20,6 +20,7 @@ import * as path from 'path';
 export interface ValidateProps {
   readonly configRepositoryLocation: string;
   readonly acceleratorPipelineName?: string;
+  readonly lambdaRuntime: cdk.aws_lambda.Runtime;
 }
 
 export class Validate extends Construct {
@@ -40,7 +41,7 @@ export class Validate extends Construct {
     const fileContents = fs.readFileSync(path.join(__dirname, '..', 'lib', 'lambdas/validate/index.js'));
 
     const lambdaFunction = new cdk.aws_lambda.Function(this, 'ValidationFunction', {
-      runtime: cdk.aws_lambda.Runtime.NODEJS_18_X,
+      runtime: props.lambdaRuntime,
       handler: 'index.handler',
       description: 'This function validates installer parameters',
       initialPolicy: [readCodePipelinePolicy],

@@ -252,7 +252,57 @@ export interface IGuardDutyEksProtectionConfig {
    */
   readonly enable: boolean;
   /**
+   * Indicates whether AWS GuardDuty EKS Agent is managed.
+   */
+  readonly manageAgent?: boolean;
+  /**
    * (OPTIONAL) List of AWS Region names to be excluded from configuring Amazon GuardDuty EKS Protection
+   */
+  readonly excludeRegions?: t.Region[];
+}
+
+/**
+ * AWS GuardDuty EC2 Malware Protection configuration.
+ */
+export interface IGuardDutyEc2ProtectionConfig {
+  /**
+   * Indicates whether AWS GuardDuty EC2 Malware Protection is enabled.
+   */
+  readonly enable: boolean;
+  /**
+   * Indicates whether AWS GuardDuty EC2 Malware Protection should retain snapshots on findings.
+   */
+  readonly keepSnapshots: boolean;
+  /**
+   * (OPTIONAL) List of AWS Region names to be excluded from configuring Amazon GuardDuty EC2 Malware Protection
+   */
+  readonly excludeRegions?: t.Region[];
+}
+
+/**
+ * AWS GuardDuty RDS Malware Protection configuration.
+ */
+export interface IGuardDutyRdsProtectionConfig {
+  /**
+   * Indicates whether AWS GuardDuty RDS Malware Protection is enabled.
+   */
+  readonly enable: boolean;
+  /**
+   * (OPTIONAL) List of AWS Region names to be excluded from configuring Amazon GuardDuty RDS Malware Protection
+   */
+  readonly excludeRegions?: t.Region[];
+}
+
+/**
+ * AWS GuardDuty Lambda Malware Protection configuration.
+ */
+export interface IGuardDutyLambdaProtectionConfig {
+  /**
+   * Indicates whether AWS GuardDuty Lambda Malware Protection is enabled.
+   */
+  readonly enable: boolean;
+  /**
+   * (OPTIONAL) List of AWS Region names to be excluded from configuring Amazon GuardDuty Lambda Malware Protection
    */
   readonly excludeRegions?: t.Region[];
 }
@@ -316,7 +366,17 @@ export interface IGuardDutyExportFindingsConfig {
  *     excludeRegions: []
  *   eksProtection:
  *     enable: true
- *     excludedRegions: []
+ *     excludeRegions: []
+ *   ec2Protection:
+ *     enable: true
+ *     keepSnapshots: true
+ *     excludeRegions: []
+ *   rdsProtection:
+ *     enable: true
+ *     excludeRegions: []
+ *   lambdaProtection:
+ *     enable: true
+ *     excludeRegions: []
  *   exportConfiguration:
  *     enable: true
  *     overrideExisting: true
@@ -367,6 +427,22 @@ export interface IGuardDutyConfig {
    * @type object
    */
   readonly eksProtection?: IGuardDutyEksProtectionConfig;
+  /**
+   * (OPTIONAL) AWS GuardDuty EC2 Protection configuration.
+   * @type object
+   */
+  readonly ec2Protection?: IGuardDutyEc2ProtectionConfig;
+  /**
+   * (OPTIONAL) AWS GuardDuty RDS Protection configuration.
+   * @type object
+   */
+  readonly rdsProtection?: IGuardDutyRdsProtectionConfig;
+  /**
+   * (OPTIONAL) AWS GuardDuty Lambda Protection configuration.
+   * @type object
+   */
+  readonly lambdaProtection?: IGuardDutyLambdaProtectionConfig;
+
   /**
    * AWS GuardDuty Export Findings configuration.
    * @type object
@@ -498,7 +574,9 @@ export interface ISecurityHubStandardConfig {
    * 'CIS AWS Foundations Benchmark v1.2.0',
    * 'CIS AWS Foundations Benchmark v1.4.0',
    * 'CIS AWS Foundations Benchmark v3.0.0',
-   * 'NIST Special Publication 800-53 Revision 5,
+   * 'NIST Special Publication 800-53 Revision 5',
+   * 'AWS Resource Tagging Standard v1.0.0'
+   * 'PCI DSS v4.0.1',
    * and 'PCI DSS v3.2.1'
    */
   readonly name:
@@ -507,8 +585,11 @@ export interface ISecurityHubStandardConfig {
     | 'CIS AWS Foundations Benchmark v1.4.0'
     | 'CIS AWS Foundations Benchmark v3.0.0'
     | 'NIST Special Publication 800-53 Revision 5'
+    | 'AWS Resource Tagging Standard v1.0.0'
     | 'PCI DSS v3.2.1'
+    | 'PCI DSS v4.0.1'
     | '';
+
   /**
    * (OPTIONAL) Deployment targets for AWS Security Hub standard.
    */
@@ -911,9 +992,12 @@ export interface ICentralSecurityServicesConfig {
    * Macie, GuardDuty, Detective and Security Hub. Without designated administrator account administrative tasks for
    * security services are performed only by users or roles in the organization's management account.
    * This helps you to separate management of the organization from management of these security services.
-   * Accelerator use Audit account as designated administrator account.
+   * Accelerator currently supports using the Audit account **only** as the delegated administrator account.
    * @type string
    * @default Audit
+   *
+   * @important
+   * **The delegated administrator account name must exactly match the Audit account name in the accounts-config.yaml file (including letter case). Any mismatch will result in a validation error.**
    *
    * To make Audit account as designated administrator account for every security services configured by accelerator, you need to provide below value for this parameter
    * @example
@@ -1705,6 +1789,7 @@ export interface IAwsConfigAggregation {
  *   deploymentTargets:
  *     organizationalUnits:
  *         - Infrastructure
+ *   useServiceLinkedRole: true
  *   aggregation:
  *     enable: true
  *     delegatedAdminAccount: LogArchive
@@ -1778,6 +1863,12 @@ export interface IAwsConfig {
    * AWS Config rule sets
    */
   readonly ruleSets?: IAwsConfigRuleSet[];
+  /**
+   * Indicates whether to create the Configuration Recorder with a service linked role. If not specified, AWS Config will use a custom IAM role created by LZA.
+   * For new deployments, it is recommended to set this setting to true.
+   * For more information, see https://docs.aws.amazon.com/config/latest/developerguide/using-service-linked-roles.html
+   */
+  readonly useServiceLinkedRole?: boolean;
 }
 
 /**

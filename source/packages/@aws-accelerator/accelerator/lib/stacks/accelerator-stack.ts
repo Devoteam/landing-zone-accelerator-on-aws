@@ -81,6 +81,10 @@ export enum AcceleratorKeyType {
    * S3 key
    */
   S3_KEY = 's3-key',
+  /**
+   * SQS Queue key
+   */
+  SQS_KEY = 'sqs-key',
 }
 
 /**
@@ -91,6 +95,10 @@ export enum ServiceLinkedRoleType {
    * Access Analyzer SLR
    */
   ACCESS_ANALYZER = 'access-analyzer',
+  /**
+   * Config SLR
+   */
+  AWS_CONFIG = 'config',
   /**
    * GUARDDUTY SLR
    */
@@ -188,6 +196,7 @@ export interface AcceleratorStackProps extends cdk.StackProps {
   readonly configCommitId?: string;
   readonly globalRegion: string;
   readonly centralizedLoggingRegion: string;
+  readonly installerStackName: string;
   /**
    * Accelerator resource name prefixes
    */
@@ -263,6 +272,11 @@ export abstract class AcceleratorStack extends cdk.Stack {
   public readonly isCloudWatchLogsGroupCMKEnabled: boolean;
 
   /**
+   * Flag indicating if AWS KMS CMK is enabled for AWS SQS Queue encryption
+   */
+  public readonly isSqsQueueCMKEnabled: boolean;
+
+  /**
    * Flag indicating if AWS KMS CMK is enabled for AWS S3 bucket encryption
    */
   public readonly isS3CMKEnabled: boolean;
@@ -333,6 +347,11 @@ export abstract class AcceleratorStack extends cdk.Stack {
     this.isCloudWatchLogsGroupCMKEnabled = this.isCmkEnabledServiceEncryption(
       this.props.globalConfig.logging.cloudwatchLogs?.encryption,
     );
+
+    //
+    // Set if AWS KMS CMK is enabled for AWS SQS Queue encryption
+    //
+    this.isSqsQueueCMKEnabled = this.isCmkEnabledServiceEncryption(this.props.globalConfig.sqs?.encryption);
 
     //
     // Set if AWS KMS CMK is enabled for AWS S3 bucket encryption
@@ -518,6 +537,77 @@ export abstract class AcceleratorStack extends cdk.Stack {
         details: [
           {
             path: `${this.stackName}/AccessAnalyzerServiceLinkedRole/CreateServiceLinkedRoleProvider/framework-onEvent/ServiceRole/DefaultPolicy/Resource`,
+            reason: 'Custom resource Lambda role policy.',
+          },
+        ],
+      });
+    }
+  }
+
+  /**
+   * Create Config Service Linked role
+   *
+   * @remarks
+   * Config Service linked role is created when awsConfig flag is ON.
+   */
+  protected createConfigServiceLinkedRole(key: { cloudwatch?: cdk.aws_kms.IKey; lambda?: cdk.aws_kms.IKey }) {
+    const isManagementAccount = cdk.Stack.of(this).account === this.props.accountsConfig.getManagementAccountId();
+    const isControlTowerEnabled = this.props.globalConfig.controlTower;
+    const isConfigRecorderEnabled = this.props.securityConfig.awsConfig.enableConfigurationRecorder;
+    const isPartitionSupported = this.serviceLinkedRoleSupportedPartitionList.includes(this.props.partition);
+    const isServiceLinkedRoleEnabled = this.props.securityConfig.awsConfig.useServiceLinkedRole === true;
+    const isDeploymentTarget = this.props.securityConfig.awsConfig.deploymentTargets
+      ? this.isIncluded(this.props.securityConfig.awsConfig.deploymentTargets)
+      : true;
+
+    if (
+      (!isControlTowerEnabled || // If Control Tower is Disabled OR
+        (this.props.globalConfig.controlTower && isManagementAccount)) && // Control Tower is Enabled, and this is the Mgmt Acct
+      isConfigRecorderEnabled &&
+      isPartitionSupported &&
+      isDeploymentTarget &&
+      isServiceLinkedRoleEnabled
+    ) {
+      this.createServiceLinkedRole(ServiceLinkedRoleType.AWS_CONFIG, {
+        cloudwatch: key.cloudwatch,
+        lambda: key.lambda,
+      });
+
+      this.nagSuppressionInputs.push({
+        id: NagSuppressionRuleIds.IAM4,
+        details: [
+          {
+            path: `${this.stackName}/ConfigServiceLinkedRole/CreateServiceLinkedRoleFunction/ServiceRole/Resource`,
+            reason: 'Custom resource Lambda role policy.',
+          },
+        ],
+      });
+
+      this.nagSuppressionInputs.push({
+        id: NagSuppressionRuleIds.IAM5,
+        details: [
+          {
+            path: `${this.stackName}/ConfigServiceLinkedRole/CreateServiceLinkedRoleFunction/ServiceRole/DefaultPolicy/Resource`,
+            reason: 'Custom resource Lambda role policy.',
+          },
+        ],
+      });
+
+      this.nagSuppressionInputs.push({
+        id: NagSuppressionRuleIds.IAM4,
+        details: [
+          {
+            path: `${this.stackName}/ConfigServiceLinkedRole/CreateServiceLinkedRoleProvider/framework-onEvent/ServiceRole/Resource`,
+            reason: 'Custom resource Lambda role policy.',
+          },
+        ],
+      });
+
+      this.nagSuppressionInputs.push({
+        id: NagSuppressionRuleIds.IAM5,
+        details: [
+          {
+            path: `${this.stackName}/ConfigServiceLinkedRole/CreateServiceLinkedRoleProvider/framework-onEvent/ServiceRole/DefaultPolicy/Resource`,
             reason: 'Custom resource Lambda role policy.',
           },
         ],
@@ -927,6 +1017,17 @@ export abstract class AcceleratorStack extends cdk.Stack {
           cloudWatchLogKmsKey: key.cloudwatch,
           cloudWatchLogRetentionInDays: this.props.globalConfig.cloudwatchLogRetentionInDays,
           roleName: 'AWSServiceRoleForAccessAnalyzer',
+        });
+
+        break;
+      case ServiceLinkedRoleType.AWS_CONFIG:
+        this.logger.debug('Create ConfigServiceLinkedRole');
+        serviceLinkedRole = new ServiceLinkedRole(this, 'ConfigServiceLinkedRole', {
+          awsServiceName: 'config.amazonaws.com',
+          environmentEncryptionKmsKey: key.lambda,
+          cloudWatchLogKmsKey: key.cloudwatch,
+          cloudWatchLogRetentionInDays: this.props.globalConfig.cloudwatchLogRetentionInDays,
+          roleName: 'AWSServiceRoleForConfig',
         });
 
         break;
@@ -1434,13 +1535,12 @@ export abstract class AcceleratorStack extends cdk.Stack {
         item.region === cdk.Stack.of(this).region,
     );
 
-    if (this.props.partition !== 'aws' && this.props.partition !== 'aws-cn' && centralEndpointVpcs.length > 0) {
-      this.logger.error('Central Endpoint VPC is only possible in commercial regions');
-      throw new Error(`Configuration validation failed at runtime.`);
-    }
-
     if (centralEndpointVpcs.length > 1) {
-      this.logger.error(`multiple (${centralEndpointVpcs.length}) central endpoint vpcs detected, should only be one`);
+      this.logger.error(
+        `Multiple (${centralEndpointVpcs.length}) central endpoint VPCs detected in region '${
+          cdk.Stack.of(this).region
+        }', and there should only be one.`,
+      );
       throw new Error(`Configuration validation failed at runtime.`);
     }
     centralEndpointVpc = centralEndpointVpcs[0];
@@ -1630,7 +1730,10 @@ export abstract class AcceleratorStack extends cdk.Stack {
   /**
    * Get the IAM principals for the organization.
    */
+
   public getOrgPrincipals(organizationId: string | undefined, withPrefixCondition?: boolean): cdk.aws_iam.IPrincipal {
+    const roleArns = [`arn:${this.partition}:iam::*:role/${this.props.prefixes.accelerator}*`];
+
     if (this.props.partition === 'aws-cn' || !this.props.organizationConfig.enable) {
       const accountIds = this.props.accountsConfig.getAccountIds();
       if (accountIds) {
@@ -1638,24 +1741,37 @@ export abstract class AcceleratorStack extends cdk.Stack {
         accountIds.forEach(accountId => {
           principals.push(new cdk.aws_iam.AccountPrincipal(accountId));
         });
-        return withPrefixCondition
-          ? new cdk.aws_iam.CompositePrincipal(...principals).withConditions({
-              ArnLike: {
-                'aws:PrincipalArn': `arn:${this.partition}:iam::*:role/${this.props.prefixes.accelerator}*`,
-              },
-            })
-          : new cdk.aws_iam.CompositePrincipal(...principals);
+
+        if (withPrefixCondition) {
+          return new cdk.aws_iam.CompositePrincipal(...principals).withConditions({
+            StringEquals: {
+              'aws:PrincipalAccount': accountIds,
+            },
+            ArnLike: {
+              'aws:PrincipalArn': roleArns,
+            },
+          });
+        } else {
+          return new cdk.aws_iam.CompositePrincipal(...principals);
+        }
       }
     }
+
     if (organizationId) {
-      return withPrefixCondition
-        ? new cdk.aws_iam.OrganizationPrincipal(organizationId).withConditions({
-            ArnLike: {
-              'aws:PrincipalArn': `arn:${this.partition}:iam::*:role/${this.props.prefixes.accelerator}*`,
-            },
-          })
-        : new cdk.aws_iam.OrganizationPrincipal(organizationId);
+      if (withPrefixCondition) {
+        return new cdk.aws_iam.OrganizationPrincipal(organizationId).withConditions({
+          StringEquals: {
+            'aws:PrincipalOrgID': organizationId,
+          },
+          ArnLike: {
+            'aws:PrincipalArn': roleArns,
+          },
+        });
+      } else {
+        return new cdk.aws_iam.OrganizationPrincipal(organizationId);
+      }
     }
+
     this.logger.error('Organization ID not found or account IDs not found');
     throw new Error(`Configuration validation failed at runtime.`);
   }

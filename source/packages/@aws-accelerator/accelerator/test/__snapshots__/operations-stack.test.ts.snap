@@ -486,15 +486,20 @@ exports[`OperationsStack Construct(OperationsStack):  Snapshot Test 1`] = `
           "S3Bucket": "cdk-hnb659fds-assets-111111111111-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomServiceQuotaLimitsCustomResourceProviderRole024C3C88",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -678,15 +683,20 @@ exports[`OperationsStack Construct(OperationsStack):  Snapshot Test 1`] = `
           "S3Bucket": "cdk-hnb659fds-assets-111111111111-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomSsmGetParameterValueCustomResourceProviderRoleB3AFDDB2",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1020,18 +1030,20 @@ exports[`OperationsStack Construct(OperationsStack):  Snapshot Test 1`] = `
               "Action": "sts:AssumeRole",
               "Condition": {
                 "ArnLike": {
-                  "aws:PrincipalArn": {
-                    "Fn::Join": [
-                      "",
-                      [
-                        "arn:",
-                        {
-                          "Ref": "AWS::Partition",
-                        },
-                        ":iam::*:role/AWSAccelerator*",
+                  "aws:PrincipalArn": [
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:",
+                          {
+                            "Ref": "AWS::Partition",
+                          },
+                          ":iam::*:role/AWSAccelerator*",
+                        ],
                       ],
-                    ],
-                  },
+                    },
+                  ],
                 },
                 "StringEquals": {
                   "aws:PrincipalOrgID": "o-asdf123456",
@@ -1111,30 +1123,11 @@ exports[`OperationsStack Construct(OperationsStack):  Snapshot Test 1`] = `
       "Type": "Custom::ServiceQuotaLimits",
       "UpdateReplacePolicy": "Delete",
     },
-    "ServiceQuotaUpdatesLB99A93841000457ABA73": {
-      "DeletionPolicy": "Delete",
-      "DependsOn": [
-        "CustomServiceQuotaLimitsCustomResourceProviderLogGroupBC81BDCC",
-      ],
-      "Properties": {
-        "ServiceToken": {
-          "Fn::GetAtt": [
-            "CustomServiceQuotaLimitsCustomResourceProviderHandler81BAABBF",
-            "Arn",
-          ],
-        },
-        "desiredValue": 1000,
-        "quotaCode": "L-B99A9384",
-        "serviceCode": "lambda",
-      },
-      "Type": "Custom::ServiceQuotaLimits",
-      "UpdateReplacePolicy": "Delete",
-    },
     "SsmParamAcceleratorVersionFF83282D": {
       "Properties": {
         "Name": "/accelerator/AWSAccelerator-OperationsStack-111111111111-us-east-1/version",
         "Type": "String",
-        "Value": "1.11.0",
+        "Value": "1.12.2",
       },
       "Type": "AWS::SSM::Parameter",
     },

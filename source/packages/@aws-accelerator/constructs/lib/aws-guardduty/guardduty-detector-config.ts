@@ -11,6 +11,7 @@
  *  and limitations under the License.
  */
 
+import { CUSTOM_RESOURCE_PROVIDER_RUNTIME } from '@aws-accelerator/utils/lib/lambda';
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
@@ -35,6 +36,26 @@ export interface GuardDutyDetectorConfigProps {
    * EKS Protection
    */
   readonly enableEksProtection: boolean;
+  /**
+   * EKS agent
+   */
+  readonly enableEksAgent: boolean;
+  /**
+   * Malware Protection
+   */
+  readonly enableEc2MalwareProtection: boolean;
+  /**
+   * Malware Protection Snapshots retention
+   */
+  readonly keepMalwareProtectionSnapshosts: boolean;
+  /**
+   * RDS Protection
+   */
+  readonly enableRdsProtection: boolean;
+  /**
+   * Lambda Protection
+   */
+  readonly enableLambdaProtection: boolean;
   /**
    * Custom resource lambda log group encryption key, when undefined default AWS managed key will be used
    */
@@ -63,7 +84,7 @@ export class GuardDutyDetectorConfig extends Construct {
 
     const provider = cdk.CustomResourceProvider.getOrCreateProvider(this, RESOURCE_TYPE, {
       codeDirectory: path.join(__dirname, 'update-detector-config/dist'),
-      runtime: cdk.CustomResourceProviderRuntime.NODEJS_18_X,
+      runtime: CUSTOM_RESOURCE_PROVIDER_RUNTIME,
       memorySize: cdk.Size.mebibytes(512),
       policyStatements: [
         {
@@ -74,6 +95,7 @@ export class GuardDutyDetectorConfig extends Construct {
             'guardduty:ListMembers',
             'guardduty:UpdateDetector',
             'guardduty:UpdateMemberDetectors',
+            'guardduty:UpdateMalwareScanSettings',
           ],
           Resource: '*',
         },
@@ -87,6 +109,10 @@ export class GuardDutyDetectorConfig extends Construct {
         exportFrequency: props.exportFrequency,
         enableS3Protection: props.enableS3Protection,
         enableEksProtection: props.enableEksProtection,
+        enableEksAgent: props.enableEksAgent,
+        enableEc2Protection: props.enableEc2MalwareProtection,
+        enableRdsProtection: props.enableRdsProtection,
+        enableLambdaProtection: props.enableLambdaProtection,
       },
     });
 

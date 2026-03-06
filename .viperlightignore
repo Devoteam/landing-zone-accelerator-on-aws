@@ -97,18 +97,20 @@ source/packages/@aws-accelerator/utils/lib/regions.ts:104
 source/packages/@aws-accelerator/utils/lib/regions.ts:105
 source/packages/@aws-accelerator/utils/lib/regions.ts:106
 source/packages/@aws-accelerator/utils/lib/regions.ts:107
+source/packages/@aws-accelerator/utils/lib/regions.ts:108
+source/packages/@aws-accelerator/utils/lib/regions.ts:109
 
 # Accelerator specific assume role declaration
 
-source/packages/@aws-accelerator/accelerator/lib/accelerator.ts:411
-source/packages/@aws-accelerator/accelerator/lib/accelerator.ts:412
-source/packages/@aws-accelerator/accelerator/lib/accelerator.ts:1300
-source/packages/@aws-accelerator/accelerator/lib/accelerator.ts:1301
+source/packages/@aws-accelerator/accelerator/lib/accelerator.ts:432
+source/packages/@aws-accelerator/accelerator/lib/accelerator.ts:433
+source/packages/@aws-accelerator/accelerator/lib/accelerator.ts:1329
+source/packages/@aws-accelerator/accelerator/lib/accelerator.ts:1330
 
 # Accelerator specific assume role declaration
 
-source/packages/@aws-accelerator/config/lib/global-config.ts:1021
-source/packages/@aws-accelerator/config/lib/global-config.ts:1022
+source/packages/@aws-accelerator/config/lib/global-config.ts:1058
+source/packages/@aws-accelerator/config/lib/global-config.ts:1059
 
 # Accelerator specific assume role declaration
 
@@ -138,24 +140,24 @@ source/packages/@aws-accelerator/constructs/lib/aws-ssm/put-param-value/index.ts
 
 # Accelerator specific assume role declaration
 
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1380
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1381
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1479
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1488
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1497
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1506
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1515
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1523
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1524
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:2172
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:2173
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:2255
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:2256
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1478
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1487
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1496
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1505
-source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1514
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1385
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1386
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1484
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1493
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1502
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1511
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1520
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1528
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1529
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:2177
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:2178
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:2260
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:2261
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1483
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1492
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1501
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1510
+source/packages/@aws-accelerator/tools/lib/classes/accelerator-tool.ts:1519
 
 # Sample configuration READMEs
 
@@ -165,12 +167,11 @@ reference/sample-configurations/lza-sample-config-us-slg-central-it/README.md:10
 
 # Accelerator specific assume role declaration
 
-source/packages/@aws-accelerator/constructs/lib/aws-ec2/get-ipam-subnet-cidr/index.ts:47
-source/packages/@aws-accelerator/constructs/lib/aws-ec2/get-ipam-subnet-cidr/index.ts:48
+source/packages/@aws-accelerator/constructs/lib/aws-ec2/get-ipam-subnet-cidr/index.ts:56
 source/packages/@aws-accelerator/constructs/lib/aws-ec2/get-ipam-subnet-cidr/index.ts:57
-source/packages/@aws-accelerator/constructs/lib/aws-ec2/get-ipam-subnet-cidr/index.ts:58
-source/packages/@aws-accelerator/constructs/lib/aws-ec2/get-ipam-subnet-cidr/index.ts:64
-source/packages/@aws-accelerator/constructs/lib/aws-ec2/get-ipam-subnet-cidr/index.ts:65
+source/packages/@aws-accelerator/constructs/lib/aws-ec2/get-ipam-subnet-cidr/index.ts:68
+source/packages/@aws-accelerator/constructs/lib/aws-ec2/get-ipam-subnet-cidr/index.ts:69
+
 
 # Accelerator specific assume role declaration
 
@@ -242,3 +243,9 @@ SECURITY.md:10
 source/packages/@aws-accelerator/lza-modules/test/config/functions.test.ts:46
 source/packages/@aws-accelerator/lza-modules/test/config/functions.test.ts:73
 source/packages/@aws-accelerator/lza-modules/test/config/index.test.ts:47
+
+# LzaModules unit test mock constant file
+source/packages/@aws-lza/test/mocked-resources.ts:106
+source/packages/@aws-lza/test/mocked-resources.ts:117
+source/packages/@aws-lza/test/mocked-resources.ts:128
+source/packages/@aws-lza/test/mocked-resources.ts:135

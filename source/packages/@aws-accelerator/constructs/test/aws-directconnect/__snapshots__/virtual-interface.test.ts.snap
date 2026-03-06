@@ -14,15 +14,20 @@ exports[`VirtualInterface Construct(VirtualInterface):  Snapshot Test 1`] = `
           },
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomDirectConnectVirtualInterfaceAllocationCustomResourceProviderRoleBC904CA4",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -107,15 +112,20 @@ exports[`VirtualInterface Construct(VirtualInterface):  Snapshot Test 1`] = `
           },
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomDirectConnectVirtualInterfaceCustomResourceProviderRoleD8C9D582",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -208,6 +218,15 @@ exports[`VirtualInterface Construct(VirtualInterface):  Snapshot Test 1`] = `
                     ],
                   },
                   "Sid": "InvokeSelf",
+                },
+                {
+                  "Action": [
+                    "secretsmanager:GetSecretValue",
+                    "kms:Decrypt",
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "*",
+                  "Sid": "GetSecret",
                 },
               ],
               "Version": "2012-10-17",
@@ -303,6 +322,59 @@ exports[`VirtualInterface Construct(VirtualInterface):  Snapshot Test 1`] = `
         "vlan": 300,
       },
       "Type": "Custom::DirectConnectVirtualInterfaceAllocation",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "TestVifAuthAllocation1ED14BFA": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "CustomDirectConnectVirtualInterfaceAllocationCustomResourceProviderLogGroup29B00939",
+      ],
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "CustomDirectConnectVirtualInterfaceAllocationCustomResourceProviderHandler58CF9005",
+            "Arn",
+          ],
+        },
+        "addressFamily": "ipv4",
+        "connectionId": "test-dx-conn-id",
+        "customerAsn": 65000,
+        "enableSiteLink": false,
+        "interfaceName": "test-vif-auth",
+        "jumboFrames": false,
+        "ownerAccount": "111111111",
+        "region": "us-east-1",
+        "type": "private",
+        "vlan": 124,
+      },
+      "Type": "Custom::DirectConnectVirtualInterfaceAllocation",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "TestVifAuthKeyBB96BF5B": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "CustomDirectConnectVirtualInterfaceCustomResourceProviderLogGroup51E4607A",
+      ],
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "CustomDirectConnectVirtualInterfaceCustomResourceProviderHandler147DBFD9",
+            "Arn",
+          ],
+        },
+        "addressFamily": "ipv4",
+        "authKey": "dx/vif/key",
+        "connectionId": "test-dx-conn-id",
+        "customerAsn": 65001,
+        "directConnectGatewayId": "test-dxgw-id",
+        "enableSiteLink": false,
+        "interfaceName": "test-vif-auth",
+        "jumboFrames": false,
+        "region": "us-east-1",
+        "type": "private",
+        "vlan": 124,
+      },
+      "Type": "Custom::DirectConnectVirtualInterface",
       "UpdateReplacePolicy": "Delete",
     },
   },

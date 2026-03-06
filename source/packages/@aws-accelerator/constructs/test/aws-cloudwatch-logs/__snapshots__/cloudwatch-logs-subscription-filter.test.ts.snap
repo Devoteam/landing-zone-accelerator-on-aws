@@ -66,6 +66,7 @@ exports[`CloudWatchLogsSubscriptionFilter Construct(CloudWatchLogsSubscriptionFi
             ],
           ],
         },
+        "subscriptionType": "LOG_GROUP",
       },
       "Type": "Custom::UpdateSubscriptionFilter",
       "UpdateReplacePolicy": "Delete",
@@ -109,6 +110,7 @@ exports[`CloudWatchLogsSubscriptionFilter Construct(CloudWatchLogsSubscriptionFi
             ],
           ],
         },
+        "subscriptionType": "ACCOUNT",
       },
       "Type": "Custom::UpdateSubscriptionFilter",
       "UpdateReplacePolicy": "Delete",
@@ -194,15 +196,20 @@ exports[`CloudWatchLogsSubscriptionFilter Construct(CloudWatchLogsSubscriptionFi
           },
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomUpdateSubscriptionFilterCustomResourceProviderRole81A1751E",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -257,40 +264,11 @@ exports[`CloudWatchLogsSubscriptionFilter Construct(CloudWatchLogsSubscriptionFi
               "Statement": [
                 {
                   "Action": [
-                    "kms:Encrypt",
-                    "kms:GenerateDataKey",
-                  ],
-                  "Effect": "Allow",
-                  "Resource": [
-                    {
-                      "Fn::Join": [
-                        "",
-                        [
-                          "arn:",
-                          {
-                            "Ref": "AWS::Partition",
-                          },
-                          ":kms:",
-                          {
-                            "Ref": "AWS::Region",
-                          },
-                          ":",
-                          {
-                            "Ref": "AWS::AccountId",
-                          },
-                          ":key:*",
-                        ],
-                      ],
-                    },
-                  ],
-                  "Sid": "AllowEncryption",
-                },
-                {
-                  "Action": [
                     "logs:PutRetentionPolicy",
                     "logs:AssociateKmsKey",
                     "logs:DescribeLogGroups",
                     "logs:DescribeSubscriptionFilters",
+                    "logs:DescribeAccountPolicies",
                   ],
                   "Effect": "Allow",
                   "Resource": [
@@ -357,6 +335,50 @@ exports[`CloudWatchLogsSubscriptionFilter Construct(CloudWatchLogsSubscriptionFi
                           },
                           ":some-acc-id:destination:*",
                         ],
+                      ],
+                    },
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:",
+                          {
+                            "Ref": "AWS::Partition",
+                          },
+                          ":logs:",
+                          {
+                            "Ref": "AWS::Region",
+                          },
+                          ":",
+                          {
+                            "Ref": "AWS::AccountId",
+                          },
+                          ":*:*",
+                        ],
+                      ],
+                    },
+                  ],
+                },
+                {
+                  "Action": [
+                    "logs:PutAccountPolicy",
+                    "logs:DeleteAccountPolicy",
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "*",
+                },
+                {
+                  "Action": [
+                    "kms:Decrypt",
+                    "kms:Encrypt",
+                    "kms:GenerateDataKey",
+                  ],
+                  "Effect": "Allow",
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "CustomKey1E6D0D07",
+                        "Arn",
                       ],
                     },
                   ],

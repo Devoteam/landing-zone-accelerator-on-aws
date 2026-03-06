@@ -29,8 +29,14 @@ enabledRegions:
   # - ap-east-1
   # - ap-southeast-3
   # - ca-west-1
+  # - mx-central-1
 
 managementAccountAccessRole: AWSControlTowerExecution
+defaultEventBus:
+  policy: event-bus-policies/eventbus-policy.json
+  deploymentTargets:
+    organizationalUnits:
+      - Root
 cloudwatchLogRetentionInDays: 3653
 acceleratorMetadata:
   enable: true
@@ -272,9 +278,18 @@ logging:
           - Credentials
     firehose:
       fileExtension: json.gz
+    kinesis: 
+      streamingMode: PROVISIONED
+      shardCount: 4
+      retention: 28
+    subscription:
+      type: ACCOUNT
+      selectionCriteria: 'LogGroupName NOT IN ["/aws/lambda/AWSAccelerator-FirehoseRecordsProcessor", "development", "AppA"]'
+      overrideExisting: true
     enable: true
     dynamicPartitioning: dynamic-partitioning/log-filters.json
-    replaceLogDestinationArn: replaceLogDestinationArn
+    dynamicPartitioningByAccountId: true
+    # replaceLogDestinationArn: replaceLogDestinationArn
 
     exclusions:
       - organizationalUnits:
@@ -310,6 +325,16 @@ limits:
     deploymentTargets:
       accounts:
         - SharedServices
+  - serviceCode: vpc
+    quotaCode: L-F678F1CE
+    desiredValue: 20
+    deploymentTargets:
+      organizationalUnits:
+        - Security
+        - Infrastructure
+    regions:
+      - us-east-1
+      - us-west-2
 reports:
   costAndUsageReport:
     compression: Parquet

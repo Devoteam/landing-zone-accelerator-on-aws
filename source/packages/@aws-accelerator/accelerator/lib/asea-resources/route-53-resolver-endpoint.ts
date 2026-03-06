@@ -1,4 +1,5 @@
 import { AseaResourceType } from '@aws-accelerator/config';
+import { getAseaVpcName } from '@aws-accelerator/utils';
 import { ImportAseaResourcesStack, LogLevel } from '../stacks/import-asea-resources-stack';
 import { AseaResource, AseaResourceProps } from './resource';
 import * as cdk from 'aws-cdk-lib';
@@ -17,7 +18,7 @@ export class Route53ResolverEndpoint extends AseaResource {
   constructor(scope: ImportAseaResourcesStack, route53ResolverEndpointProps: AseaResourceProps) {
     super(scope, route53ResolverEndpointProps);
     this.props = route53ResolverEndpointProps;
-    // this.ssmParameters = [];
+
     if (route53ResolverEndpointProps.stackInfo.phase !== ASEA_PHASE_NUMBER) {
       // Skip Non-Phase 1 resource stacks
       this.scope.addLogs(
@@ -35,12 +36,17 @@ export class Route53ResolverEndpoint extends AseaResource {
       return;
     }
     for (const vpcItem of this.props.networkConfig.vpcs) {
+      if (vpcItem.region !== this.scope.region) {
+        continue;
+      }
+
       for (const endpointItem of vpcItem.vpcRoute53Resolver?.endpoints ?? []) {
         if (endpointItem.type === 'OUTBOUND') {
           // Set Resolver Endpoint
+          const aseaConfigVpcName = getAseaVpcName(vpcItem.name).replace('_vpc', '');
           const resolverEndpointCfn = this.scope.importStackResources.getResourceByName(
             'Name',
-            `${vpcItem.name} Outbound Endpoint`.replace('_vpc', ''),
+            `${aseaConfigVpcName} Outbound Endpoint`,
           );
           if (resolverEndpointCfn) {
             // Need to pull the logical ID
@@ -67,9 +73,10 @@ export class Route53ResolverEndpoint extends AseaResource {
         }
         if (endpointItem.type === 'INBOUND') {
           // Set Resolver Endpoint
+          const aseaConfigVpcName = getAseaVpcName(vpcItem.name).replace('_vpc', '');
           const resolverEndpointCfn = this.scope.importStackResources.getResourceByName(
             'Name',
-            `${vpcItem.name} Inbound Endpoint`.replace('_vpc', ''),
+            `${aseaConfigVpcName} Inbound Endpoint`,
           );
           if (resolverEndpointCfn) {
             // Need to pull the logical ID

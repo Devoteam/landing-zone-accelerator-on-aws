@@ -1,4 +1,5 @@
 import { AseaResourceType, VpcConfig, VpcTemplatesConfig } from '@aws-accelerator/config';
+import { getAseaVpcName } from '@aws-accelerator/utils';
 import { SsmResourceType } from '@aws-accelerator/utils/lib/ssm-parameter-path';
 import { AseaResource, AseaResourceProps } from './resource';
 import { ImportAseaResourcesStack, LogLevel } from '../stacks/import-asea-resources-stack';
@@ -59,16 +60,28 @@ export class SharedSecurityGroups extends AseaResource {
     }
   }
   private getSecurityGroupResourceByVpc(vpcName: string) {
+    const aseaConfigVpcName = getAseaVpcName(vpcName).replace('_vpc', '');
     for (const [, nestedStackResources] of Object.entries(this.scope.nestedStackResources ?? {})) {
       const stackKey = nestedStackResources.getStackKey();
       const nestedStack = this.scope.nestedStacks[stackKey];
       const securityGroups = nestedStackResources.getResourcesByType(RESOURCE_TYPE.SECURITY_GROUP);
       if (!securityGroups) continue;
-      if (vpcName.endsWith('_vpc')) vpcName = vpcName.split('_vpc')[0];
-      if (nestedStack.stack['_stackName'].includes(`SecurityGroups${vpcName}Shared`)) {
+      // Find match by security group description as defined in ASEA
+      //       const groupDescription = isUpdateDescription
+      //  ? `${sharedAccountKey || accountKey} ${vpcName} Security Group`
+      const securityGroupMatch = securityGroups.filter(securityGroup => {
+        const description = securityGroup.resourceMetadata['Properties']['GroupDescription'];
+        if (!description) {
+          return false;
+        }
+        const descriptionWords = description.split(' ');
+        return descriptionWords.includes(aseaConfigVpcName);
+      });
+      if (securityGroupMatch && securityGroupMatch.length > 0) {
         return { nestedStack, nestedStackResources, stackKey };
       }
     }
+    this.scope.addLogs(LogLevel.WARN, `Could not find nested stack for ${aseaConfigVpcName}`);
     return;
   }
 

@@ -12,6 +12,8 @@
  */
 
 import {
+  AccountStatus,
+  DescribeAccountCommand,
   ListOrganizationalUnitsForParentCommand,
   ListRootsCommand,
   OrganizationalUnit,
@@ -42,6 +44,20 @@ import {
  * Logger
  */
 const logger: winston.Logger = createLogger([path.parse(path.basename(__filename)).name]);
+
+/**
+ * Function to check if account is suspended.
+ * @param client {@link OrganizationsClient}
+ * @param accountId string
+ * @returns boolean
+ */
+export async function isAccountSuspended(client: OrganizationsClient, accountId: string): Promise<boolean> {
+  const response = await throttlingBackOff(() => client.send(new DescribeAccountCommand({ AccountId: accountId })));
+  if (!response.Account) {
+    throw new Error(`DescribeAccount API did not return Account object.`);
+  }
+  return response.Account.Status === AccountStatus.SUSPENDED;
+}
 
 /**
  * Function to get AWS Organizations Root details

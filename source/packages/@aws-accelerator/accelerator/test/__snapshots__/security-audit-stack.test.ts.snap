@@ -765,16 +765,18 @@ def script_handler(events, context):
                 ],
               ],
             },
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
           },
         },
         "Handler": "index.handler",
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "ControlTowerNotificationsForwarderFunctionServiceRoleE83D121D",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 120,
       },
       "Type": "AWS::Lambda::Function",
@@ -894,15 +896,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomAuditManagerCreateDefaultReportsDestinationCustomResourceProviderRoleAEE72AE5",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -978,15 +985,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomDetectiveCreateMembersCustomResourceProviderRole90BCDD0D",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1088,15 +1100,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomDetectiveUpdateGraphCustomResourceProviderRole54CD7295",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1221,15 +1238,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomGuardDutyCreateMembersCustomResourceProviderRole2D82020E",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1335,6 +1357,11 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
         "MemorySize": 512,
         "Role": {
@@ -1343,7 +1370,7 @@ def script_handler(events, context):
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1399,6 +1426,7 @@ def script_handler(events, context):
                     "guardduty:ListMembers",
                     "guardduty:UpdateDetector",
                     "guardduty:UpdateMemberDetectors",
+                    "guardduty:UpdateMalwareScanSettings",
                   ],
                   "Effect": "Allow",
                   "Resource": "*",
@@ -1422,15 +1450,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomMacieCreateMemberCustomResourceProviderRole3E8977EE",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1528,15 +1561,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomS3PutBucketReplicationCustomResourceProviderRole1C378488",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1615,15 +1653,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomSSMShareDocumentCustomResourceProviderRole53A2A3EC",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1711,15 +1754,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomSecurityHubCreateMembersCustomResourceProviderRoleFD355CB6",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1815,15 +1863,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomSecurityHubRegionAggregationCustomResourceProviderRole15741044",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 180,
       },
       "Type": "AWS::Lambda::Function",
@@ -1904,15 +1957,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomSsmGetParameterValueCustomResourceProviderRoleB3AFDDB2",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -2055,7 +2113,11 @@ def script_handler(events, context):
             "Arn",
           ],
         },
+        "enableEc2Protection": false,
+        "enableEksAgent": false,
         "enableEksProtection": true,
+        "enableLambdaProtection": false,
+        "enableRdsProtection": false,
         "enableS3Protection": true,
         "exportFrequency": "FIFTEEN_MINUTES",
       },
@@ -2705,7 +2767,7 @@ def script_handler(events, context):
       "Properties": {
         "Name": "/accelerator/AWSAccelerator-SecurityAuditStack-222222222222-us-east-1/version",
         "Type": "String",
-        "Value": "1.11.0",
+        "Value": "1.12.2",
       },
       "Type": "AWS::SSM::Parameter",
     },
@@ -3495,16 +3557,18 @@ def script_handler(events, context):
                 ],
               ],
             },
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
           },
         },
         "Handler": "index.handler",
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "ControlTowerNotificationsForwarderFunctionServiceRoleE83D121D",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 120,
       },
       "Type": "AWS::Lambda::Function",
@@ -3624,15 +3688,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomAuditManagerCreateDefaultReportsDestinationCustomResourceProviderRoleAEE72AE5",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -3708,15 +3777,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomDetectiveCreateMembersCustomResourceProviderRole90BCDD0D",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -3818,15 +3892,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomDetectiveUpdateGraphCustomResourceProviderRole54CD7295",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -3951,15 +4030,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomGuardDutyCreateMembersCustomResourceProviderRole2D82020E",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -4065,6 +4149,11 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
         "MemorySize": 512,
         "Role": {
@@ -4073,7 +4162,7 @@ def script_handler(events, context):
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -4129,6 +4218,7 @@ def script_handler(events, context):
                     "guardduty:ListMembers",
                     "guardduty:UpdateDetector",
                     "guardduty:UpdateMemberDetectors",
+                    "guardduty:UpdateMalwareScanSettings",
                   ],
                   "Effect": "Allow",
                   "Resource": "*",
@@ -4152,15 +4242,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomMacieCreateMemberCustomResourceProviderRole3E8977EE",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -4258,15 +4353,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomS3PutBucketReplicationCustomResourceProviderRole1C378488",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -4345,15 +4445,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomSSMShareDocumentCustomResourceProviderRole53A2A3EC",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -4441,15 +4546,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomSecurityHubCreateMembersCustomResourceProviderRoleFD355CB6",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -4545,15 +4655,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomSecurityHubRegionAggregationCustomResourceProviderRole15741044",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 180,
       },
       "Type": "AWS::Lambda::Function",
@@ -4634,15 +4749,20 @@ def script_handler(events, context):
           "S3Bucket": "cdk-hnb659fds-assets-222222222222-us-east-1",
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomSsmGetParameterValueCustomResourceProviderRoleB3AFDDB2",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -4785,7 +4905,11 @@ def script_handler(events, context):
             "Arn",
           ],
         },
+        "enableEc2Protection": false,
+        "enableEksAgent": false,
         "enableEksProtection": false,
+        "enableLambdaProtection": false,
+        "enableRdsProtection": false,
         "enableS3Protection": true,
         "exportFrequency": "FIFTEEN_MINUTES",
       },
@@ -5069,7 +5193,7 @@ def script_handler(events, context):
       "Properties": {
         "Name": "/accelerator/AWSAccelerator-SecurityAuditStack-222222222222-us-east-1/version",
         "Type": "String",
-        "Value": "1.11.0",
+        "Value": "1.12.2",
       },
       "Type": "AWS::SSM::Parameter",
     },

@@ -14,15 +14,20 @@ exports[`GuardDutyOrganizationAdminAccount Construct(GuardDutyOrganizationAdminA
           },
           "S3Key": "REPLACED-GENERATED-NAME.zip",
         },
+        "Environment": {
+          "Variables": {
+            "SOLUTION_ID": "AwsSolution/SO0199/1.12.2",
+          },
+        },
         "Handler": "__entrypoint__.handler",
-        "MemorySize": 128,
+        "MemorySize": 512,
         "Role": {
           "Fn::GetAtt": [
             "CustomGuardDutyEnableOrganizationAdminAccountCustomResourceProviderRole30371E09",
             "Arn",
           ],
         },
-        "Runtime": "nodejs18.x",
+        "Runtime": "nodejs20.x",
         "Timeout": 180,
       },
       "Type": "AWS::Lambda::Function",

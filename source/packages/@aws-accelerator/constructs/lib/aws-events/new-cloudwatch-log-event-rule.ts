@@ -10,9 +10,11 @@
  *  OR CONDITIONS OF ANY KIND, express or implied. See the License for the specific language governing permissions
  *  and limitations under the License.
  */
+import { DEFAULT_LAMBDA_RUNTIME } from '@aws-accelerator/utils/lib/lambda';
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as path from 'path';
+import { NagSuppressions } from 'cdk-nag';
 
 export type cloudwatchExclusionProcessedItem = {
   account: string;
@@ -68,6 +70,15 @@ export interface NewCloudWatchLogsEventProps {
    * CloudWatch Logs exclusion setting
    */
   exclusionSetting?: cloudwatchExclusionProcessedItem;
+  /**
+   * Cloudwatch log subscription setting
+   */
+  subscriptionType: string;
+  /**
+   *
+   * KMS key to encrypt the SQS Queue, when undefined default AWS managed key will be used
+   */
+  sqsKey?: cdk.aws_kms.IKey;
 }
 
 /**
@@ -84,6 +95,40 @@ export class NewCloudWatchLogEvent extends Construct {
     } else {
       LogSubscriptionRole = props.subscriptionFilterRoleArn;
     }
+
+    // Configure queue encryption based on props.sqsKey
+    const queueEncryption = props.sqsKey
+      ? { encryption: cdk.aws_sqs.QueueEncryption.KMS, encryptionMasterKey: props.sqsKey }
+      : { encryption: cdk.aws_sqs.QueueEncryption.SQS_MANAGED };
+
+    // Create DLQ for main queue
+    const queueDlq = new cdk.aws_sqs.Queue(this, 'LogEventQueueDlq', {
+      fifo: true,
+      retentionPeriod: cdk.Duration.days(14),
+      enforceSSL: true, // Enforce SSL
+      ...queueEncryption,
+    });
+
+    // Create main FIFO queue
+    const queue = new cdk.aws_sqs.Queue(this, 'LogEventQueue', {
+      fifo: true,
+      contentBasedDeduplication: true,
+      enforceSSL: true, // Enforce SSL
+      deliveryDelay: cdk.Duration.minutes(10), // 10-minute delay
+      visibilityTimeout: cdk.Duration.minutes(15), // Match Lambda timeout
+      deadLetterQueue: {
+        queue: queueDlq,
+        maxReceiveCount: 3,
+      },
+      ...queueEncryption,
+    });
+
+    // Create DLQ for Lambda
+    const lambdaDlq = new cdk.aws_sqs.Queue(this, 'LambdaDlq', {
+      retentionPeriod: cdk.Duration.days(14),
+      enforceSSL: true, // Enforce SSL
+      ...queueEncryption,
+    });
 
     const newLogGroupRule = new cdk.aws_events.Rule(this, 'NewLogGroupCreatedRule', {
       eventPattern: {
@@ -102,11 +147,11 @@ export class NewCloudWatchLogEvent extends Construct {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           [key: string]: any;
         }[] = [
-      { AcceleratorPrefix: props.acceleratorPrefix },
       { LogRetention: props.logsRetentionInDaysValue },
       { LogDestination: props.logDestinationArn },
       { LogSubscriptionRole: LogSubscriptionRole },
       { LogExclusion: JSON.stringify(props.exclusionSetting!) },
+      { LogSubscriptionType: props.subscriptionType },
     ];
 
     if (props.logsKmsKey) {
@@ -128,12 +173,14 @@ export class NewCloudWatchLogEvent extends Construct {
       this,
       'SetLogRetentionSubscriptionFunction',
       {
-        runtime: cdk.aws_lambda.Runtime.NODEJS_18_X,
+        runtime: DEFAULT_LAMBDA_RUNTIME,
         timeout: cdk.Duration.minutes(15),
         handler: 'index.handler',
         code: cdk.aws_lambda.Code.fromAsset(path.join(__dirname, 'put-subscription-policy/dist')),
         environmentEncryption: props.lambdaEnvKey,
         environment: lambdaEnvironment,
+        deadLetterQueueEnabled: true,
+        deadLetterQueue: lambdaDlq,
         initialPolicy: [
           new cdk.aws_iam.PolicyStatement({
             actions: [
@@ -162,9 +209,42 @@ export class NewCloudWatchLogEvent extends Construct {
         ],
       },
     );
-    // set basic trigger with 5 retries
-    newLogGroupRule.addTarget(
-      new cdk.aws_events_targets.LambdaFunction(setLogRetentionSubscriptionFunction, { retryAttempts: 5 }),
+
+    // Grant Lambda permissions to read from SQS
+    queue.grantConsumeMessages(setLogRetentionSubscriptionFunction);
+
+    // Add SQS trigger to Lambda
+    setLogRetentionSubscriptionFunction.addEventSource(
+      new cdk.aws_lambda_event_sources.SqsEventSource(queue, {
+        batchSize: 1,
+      }),
     );
+
+    // Add SQS as target for CloudWatch Event Rule
+    newLogGroupRule.addTarget(
+      new cdk.aws_events_targets.SqsQueue(queue, {
+        message: cdk.aws_events.RuleTargetInput.fromEventPath('$.detail'),
+        messageGroupId: 'logEvents',
+        retryAttempts: 3, // Add retry attempts
+      }),
+    );
+    const stack = cdk.Stack.of(scope);
+
+    // AwsSolutions-SQS3: The SQS queue does not have a dead-letter queue (DLQ) enabled or have a cdk_nag rule suppression indicating it is a DLQ.
+    NagSuppressions.addResourceSuppressionsByPath(stack, `${stack.stackName}/${id}/${lambdaDlq.node.id}/Resource`, [
+      {
+        id: 'AwsSolutions-SQS3',
+        reason:
+          'The SQS queue does not have a dead-letter queue (DLQ) enabled or have a cdk_nag rule suppression indicating it is a DLQ.',
+      },
+    ]);
+    // AwsSolutions-SQS3: The SQS queue does not have a dead-letter queue (DLQ) enabled or have a cdk_nag rule suppression indicating it is a DLQ.
+    NagSuppressions.addResourceSuppressionsByPath(stack, `${stack.stackName}/${id}/${queueDlq.node.id}/Resource`, [
+      {
+        id: 'AwsSolutions-SQS3',
+        reason:
+          'The SQS queue does not have a dead-letter queue (DLQ) enabled or have a cdk_nag rule suppression indicating it is a DLQ.',
+      },
+    ]);
   }
 }

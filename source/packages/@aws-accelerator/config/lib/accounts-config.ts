@@ -21,6 +21,7 @@ import { throttlingBackOff } from '@aws-accelerator/utils/lib/throttle';
 
 import * as i from './models/accounts-config';
 import { DeploymentTargets, parseAccountsConfig } from './common';
+import { getGlobalRegion } from '../../utils/lib/common-functions';
 
 const logger = createLogger(['accounts-config']);
 
@@ -36,6 +37,7 @@ export class AccountConfig implements i.IAccountConfig {
   readonly email: string = '';
   readonly organizationalUnit: string = '';
   readonly warm: boolean | undefined = undefined;
+  readonly accountAlias?: string | undefined = undefined;
 }
 
 export class GovCloudAccountConfig implements i.IGovCloudAccountConfig {
@@ -45,6 +47,7 @@ export class GovCloudAccountConfig implements i.IGovCloudAccountConfig {
   readonly organizationalUnit: string = '';
   readonly warm: boolean | undefined = undefined;
   readonly enableGovCloud: boolean | undefined = undefined;
+  readonly accountAlias?: string | undefined = undefined;
 }
 
 export class AccountsConfig implements i.IAccountsConfig {
@@ -202,33 +205,10 @@ export class AccountsConfig implements i.IAccountsConfig {
         });
         // orgs are enabled
       } else if (isOrgsEnabled) {
-        let organizationsClient: AWS.Organizations;
-        if (partition === 'aws-us-gov') {
-          organizationsClient = new AWS.Organizations({
-            region: 'us-gov-west-1',
-            credentials: managementAccountCredentials,
-          });
-        } else if (partition === 'aws-cn') {
-          organizationsClient = new AWS.Organizations({
-            region: 'cn-northwest-1',
-            credentials: managementAccountCredentials,
-          });
-        } else if (partition === 'aws-iso-f') {
-          organizationsClient = new AWS.Organizations({
-            region: 'us-isof-south-1',
-            credentials: managementAccountCredentials,
-          });
-        } else if (partition === 'aws-iso-e') {
-          organizationsClient = new AWS.Organizations({
-            region: 'eu-isoe-west-1',
-            credentials: managementAccountCredentials,
-          });
-        } else {
-          organizationsClient = new AWS.Organizations({
-            region: 'us-east-1',
-            credentials: managementAccountCredentials,
-          });
-        }
+        const organizationsClient = new AWS.Organizations({
+          region: getGlobalRegion(partition),
+          credentials: managementAccountCredentials,
+        });
 
         let nextToken: string | undefined = undefined;
 

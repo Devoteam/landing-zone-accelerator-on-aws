@@ -16,6 +16,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Construct } from 'constructs';
 import path = require('path');
 import { NagSuppressions } from 'cdk-nag';
+import { DEFAULT_LAMBDA_RUNTIME } from '../../utils/lib/lambda';
+import { AcceleratorResourcePrefixes } from '../utils/app-utils';
 
 export interface ValidateEnvironmentConfigProps {
   readonly acceleratorConfigTable: cdk.aws_dynamodb.ITable;
@@ -44,6 +46,7 @@ export interface ValidateEnvironmentConfigProps {
    * Custom resource lambda log retention in days
    */
   readonly logRetentionInDays: number;
+  readonly prefixes: AcceleratorResourcePrefixes,
   readonly vpcsCidrs: { vpcName: string; logicalId: string; cidrs: string[]; parameterName: string }[];
 }
 
@@ -102,9 +105,6 @@ export class ValidateEnvironmentConfig extends Construct {
         `arn:${props.partition}:cloudformation:${props.region}:${props.managementAccountId}:stack/${props.stackName}*`,
       ],
     });
-    const validationParameters = props.vpcsCidrs.map(
-      p => `arn:${props.partition}:ssm:${props.region}:${props.managementAccountId}:parameter${p.parameterName}`,
-    );
     const ssmPolicy = new cdk.aws_iam.PolicyStatement({
       sid: 'sms',
       effect: cdk.aws_iam.Effect.ALLOW,
@@ -112,12 +112,12 @@ export class ValidateEnvironmentConfig extends Construct {
       resources: [
         props.driftDetectionParameter.parameterArn,
         props.driftDetectionMessageParameter.parameterArn,
-        ...validationParameters,
+        `arn:${props.partition}:ssm:${props.region}:${props.managementAccountId}:parameter${props.prefixes.ssmParamName}/validation/*/network/vpc/*/deployedCidrs`,
       ],
     });
 
     const providerLambda = new cdk.aws_lambda.Function(this, 'ValidateEnvironmentFunction', {
-      runtime: cdk.aws_lambda.Runtime.NODEJS_18_X,
+      runtime: DEFAULT_LAMBDA_RUNTIME,
       code: cdk.aws_lambda.Code.fromAsset(path.join(__dirname, './lambdas/validate-environment/dist')),
       handler: 'index.handler',
       timeout: cdk.Duration.minutes(15),

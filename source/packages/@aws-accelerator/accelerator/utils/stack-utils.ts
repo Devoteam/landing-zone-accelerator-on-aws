@@ -54,6 +54,7 @@ import { AssumeRoleCommand, GetCallerIdentityCommand, STSClient } from '@aws-sdk
 import { setRetryStrategy } from '@aws-accelerator/utils/lib/common-functions';
 import { throttlingBackOff } from '@aws-accelerator/utils/lib/throttle';
 import { ControlTowerClient, ListLandingZonesCommand } from '@aws-sdk/client-controltower';
+import { CfnResource } from 'aws-cdk-lib';
 
 const logger = createLogger(['stack-utils']);
 /**
@@ -165,7 +166,7 @@ function getAseaStackSynthesizer(props: {
  * @param globalConfig
  * @param acceleratorPrefix
  */
-function addAcceleratorTags(
+export function addAcceleratorTags(
   node: IConstruct,
   partition: string,
   globalConfig: GlobalConfig,
@@ -181,6 +182,15 @@ function addAcceleratorTags(
     'AWS::Route53Resolver::ResolverEndpoint',
     'AWS::Route53Resolver::ResolverRule',
   ];
+
+  const tagsWithPrefix = globalConfig.tags;
+  const acceleratorTag = tagsWithPrefix.find(tag => tag.key === 'Accelerator');
+  if (!acceleratorTag) {
+    tagsWithPrefix.push({
+      key: 'Accelerator',
+      value: acceleratorPrefix,
+    });
+  }
 
   for (const resource of node.node.findAll()) {
     if (resource instanceof cdk.CfnResource && !excludeResourceTypes.includes(resource.cfnResourceType)) {
@@ -198,7 +208,74 @@ function addAcceleratorTags(
         });
       }
     }
+
+    if (resource instanceof cdk.CustomResourceProvider) {
+      tagCustomResourceLambda(resource, tagsWithPrefix);
+      tagCustomResourceRole(resource, tagsWithPrefix);
+    }
   }
+}
+
+/**
+ * Tags the IAM Role associated with a custom resource provider.
+ * @param customResource - The custom resource provider whose role needs to be tagged
+ * @param tags - Array of key-value pairs to be applied as tags to the role
+ * @returns void
+ */
+export function tagCustomResourceRole(
+  customResource: cdk.CustomResourceProvider,
+  tags: { key: string; value: string }[],
+): void {
+  try {
+    const customResourceRole = customResource.node.findChild('Role') as CfnResource;
+    if (customResourceRole) {
+      setTagsForChildResources(customResourceRole, tags);
+    }
+  } catch (e) {
+    logger.info(`No child node for role associated with ${tagCustomResourceRole.name}`);
+    return;
+  }
+}
+
+/**
+ * Tags the Lambda function associated with a custom resource provider.
+ * @param customResource - The custom resource provider whose Lambda function needs to be tagged
+ * @param tags - Array of key-value pairs to be applied as tags to the Lambda function
+ * @returns void
+ */
+export function tagCustomResourceLambda(
+  customResource: cdk.CustomResourceProvider,
+  tags: { key: string; value: string }[],
+): void {
+  try {
+    const lambdaHandler = customResource.node.findChild('Handler') as CfnResource;
+    if (lambdaHandler) {
+      setTagsForChildResources(lambdaHandler, tags);
+    }
+  } catch (e) {
+    logger.info(`No child node for lambda associated with ${tagCustomResourceLambda.name}`);
+  }
+}
+
+/**
+ * Adds tags to a CloudFormation resource, applying alphabetical ordering.
+ * @param resource - The CloudFormation resource to tag
+ * @param tags - Array of key-value pairs to be applied as tags
+ */
+export function setTagsForChildResources(resource: CfnResource, tags: { key: string; value: string }[]): void {
+  if (!tags || tags.length === 0) {
+    return;
+  }
+
+  // Convert tags to CloudFormation format and sort by key
+  const formattedTags = tags
+    .map(tag => ({
+      Key: tag.key,
+      Value: tag.value,
+    }))
+    .sort((a, b) => a.Key.localeCompare(b.Key));
+
+  resource.addPropertyOverride('Tags', formattedTags);
 }
 
 /**
@@ -282,7 +359,7 @@ export async function createPipelineStack(
     });
     cdk.Aspects.of(pipelineStack).add(new AwsSolutionsChecks());
     cdk.Aspects.of(pipelineStack).add(new PermissionsBoundaryAspect(context.account!, context.partition));
-
+    new AcceleratorAspects(app, context.partition, context.useExistingRoles ?? false);
     NagSuppressions.addStackSuppressions(pipelineStack, [
       {
         id: 'AwsSolutions-IAM5',
@@ -377,6 +454,7 @@ export function createDiagnosticsPackStack(
     });
     cdk.Aspects.of(diagnosticsPackStack).add(new AwsSolutionsChecks());
     cdk.Aspects.of(diagnosticsPackStack).add(new PermissionsBoundaryAspect(context.account!, context.partition));
+    new AcceleratorAspects(app, context.partition, context.useExistingRoles ?? false);
   }
 }
 
@@ -1112,7 +1190,7 @@ export function createNetworkAssociationsStacks(
     // Since shared security groups are created in networkAssociations. NetworkGwlbStack depends on NetworkAssociationsStack
     networkGwlbStack.addDependency(networkAssociationsStack);
     cdk.Aspects.of(networkGwlbStack).add(new AwsSolutionsChecks());
-    cdk.Aspects.of(networkAssociationsStack).add(new PermissionsBoundaryAspect(accountId, context.partition));
+    cdk.Aspects.of(networkGwlbStack).add(new PermissionsBoundaryAspect(accountId, context.partition));
     new AcceleratorAspects(app, context.partition, context.useExistingRoles ?? false);
   }
 }

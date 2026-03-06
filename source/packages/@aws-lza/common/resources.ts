@@ -11,10 +11,6 @@
  *  and limitations under the License.
  */
 
-import path from 'path';
-import { createLogger } from './logger';
-
-export const AcceleratorLogger = (fileName: string) => createLogger([path.parse(path.basename(fileName)).name]);
 /**
  * Accelerator solution supported module names
  */
@@ -22,11 +18,15 @@ export enum AcceleratorModuleName {
   /**
    * AWS Organizations module
    */
-  ORGANIZATIONS = 'organizations',
+  AWS_ORGANIZATIONS = 'aws-organizations',
   /**
-   * ControlTower module
+   * AWS Control Tower Landing zone module
    */
-  CONTROL_TOWER = 'control-tower',
+  CONTROL_TOWER_LANDING_ZONE = 'control-tower-landing-zone',
+  /**
+   * Amazon EC2 module
+   */
+  AMAZON_EC2 = 'amazon-ec2',
 }
 
 /**
@@ -63,12 +63,12 @@ export interface IModuleCommonParameter {
    */
   partition: string;
   /**
-   * Accelerator home region
+   * AWS Region
    *
    */
-  homeRegion: string;
+  region: string;
   /**
-   * Accelerator global region, when not present home region is considered as global region
+   * Accelerator global region, when not present executing region is considered as global region
    *
    */
   globalRegion?: string;
@@ -81,9 +81,15 @@ export interface IModuleCommonParameter {
    */
   readonly solutionId?: string;
   /**
-   * Management account credentials, required for external deployment
+   * Target account credentials where Module will be executed
+   *
+   * @description
+   * When target AWS Account is same as the module invocation account this property will be undefined.
+   *
+   * @default
+   * undefined
    */
-  managementAccountCredentials?: IAssumeRoleCredential;
+  credentials?: IAssumeRoleCredential;
   /**
    *  Flag indicating if the module should perform a dry run
    *
@@ -94,17 +100,30 @@ export interface IModuleCommonParameter {
 }
 
 /**
- * AWS Control Tower shared account details
+ * Accelerator module default parameter
+ *
+ * @description
+ * Each LZA module will set these parameters
  */
-export interface IControlTowerSharedAccountDetails {
+export interface IModuleDefaultParameter {
   /**
-   * Name of the account
+   * Name of the accelerator module.
+   *
+   * @see {@link AcceleratorModules}
    */
-  name: string;
+  readonly moduleName: string;
   /**
-   * Account email
+   * Global region
    */
-  email: string;
+  readonly globalRegion: string;
+  /**
+   * Flag indicating existing role
+   */
+  readonly useExistingRole: boolean;
+  /**
+   * Flag indicating if the module should perform a dry run
+   */
+  readonly dryRun: boolean;
 }
 
 /**
@@ -174,10 +193,92 @@ export type ControlTowerLandingZoneDetailsType = {
 };
 
 /**
- * AWS Control Tower Landing Zone latest version.
- *
- * @remarks
- * Once Control Tower API support available for landing zone version, this hard coded constant will be removed.
- * When Control Tower Landing Zone gets new version, we need to update this constant.
+ * Principal Org id condition for policy
  */
-export const CONTROL_TOWER_LANDING_ZONE_VERSION = '3.3';
+export type PrincipalOrgIdConditionType = {
+  [key: string]: string | string[];
+};
+
+/**
+ * IAM policy statement type used in custom resource to update policy of existing resources
+ */
+export type PolicyStatementType = {
+  /**
+   * The Sid (statement ID) is an optional identifier that you provide for the
+   * policy statement. You can assign a Sid value to each statement in a
+   * statement array. In services that let you specify an ID element, such as
+   * SQS and SNS, the Sid value is just a sub-ID of the policy document's ID. In
+   * IAM, the Sid value must be unique within a JSON policy.
+   *
+   * @default - no sid
+   */
+  readonly Sid?: string;
+  /**
+   * List of actions to add to the statement
+   *
+   * @default - no actions
+   */
+  readonly Action: string | string[];
+  /**
+   * List of not actions to add to the statement
+   *
+   * @default - no not-actions
+   */
+  readonly NotActions?: string[];
+  /**
+   * Principal to add to the statement
+   *
+   * @default - no principal
+   */
+  readonly Principal?: PrincipalOrgIdConditionType;
+  /**
+   * Principal to add to the statement
+   *
+   * @default - no not principal
+   */
+  readonly NotPrincipal?: PrincipalOrgIdConditionType;
+  /**
+   * Resource ARNs to add to the statement
+   *
+   * @default - no resource
+   */
+  readonly Resource?: string | string[];
+  /**
+   * NotResource ARNs to add to the statement
+   *
+   * @default - no not-resources
+   */
+  readonly NotResource?: string[];
+  /**
+   * Condition to add to the statement
+   *
+   * @default - no condition
+   */
+  readonly Condition?: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [key: string]: any;
+  };
+  /**
+   * Whether to allow or deny the actions in this statement
+   *
+   * @default Effect.ALLOW
+   */
+  readonly Effect?: 'Allow' | 'Deny';
+};
+
+/**
+ * AWS Organization Root config type
+ */
+export type OrganizationRootType = {
+  Name: string;
+  Id: string;
+};
+
+/**
+ * Policy Document
+ */
+export type PolicyDocument = {
+  Version: string;
+  Id?: string;
+  Statement: PolicyStatementType[];
+};

@@ -53,7 +53,7 @@ import {
   KMSClient,
   ScheduleKeyDeletionCommand,
 } from '@aws-sdk/client-kms';
-import { ListAccountsCommand, OrganizationsClient } from '@aws-sdk/client-organizations';
+import { AccountStatus, ListAccountsCommand, OrganizationsClient } from '@aws-sdk/client-organizations';
 import {
   DeleteBucketCommand,
   DeleteObjectsCommand,
@@ -364,6 +364,7 @@ export class AcceleratorTool {
     const installerPipeline = await AcceleratorTool.getPipelineNameFromCloudFormationStack(installerStackName);
     if (!installerPipeline.status) {
       this.debugLog(`${installerPipeline.pipelineName}`, 'info');
+      this.logger.error(`${installerPipeline.pipelineName} doesn't exist, cannot continue`);
       return false;
     }
     const getPipelineNameResponse = await throttlingBackOff(() =>
@@ -709,6 +710,10 @@ export class AcceleratorTool {
         organizationsClient.send(new ListAccountsCommand({ NextToken: nextToken })),
       );
       for (const account of page.Accounts ?? []) {
+        if (account.Status == AccountStatus.SUSPENDED) {
+          this.logger.error(`Account ${account.Name} (${account.Email}) is suspended, will not be cleaned up`);
+          continue;
+        }
         if (account.Id && account.Name) {
           accountIds.push({ accountName: account.Name, accountId: account.Id });
         }

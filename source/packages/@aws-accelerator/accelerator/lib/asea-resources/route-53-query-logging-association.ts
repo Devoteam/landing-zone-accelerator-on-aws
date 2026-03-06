@@ -1,4 +1,5 @@
 import { AseaResourceType, VpcConfig } from '@aws-accelerator/config';
+import { getAseaVpcName } from '@aws-accelerator/utils';
 import { ImportAseaResourcesStack, LogLevel } from '../stacks/import-asea-resources-stack';
 import { AseaResource, AseaResourceProps } from './resource';
 import { pascalCase } from 'pascal-case';
@@ -37,7 +38,15 @@ export class Route53ResolverQueryLoggingAssociation extends AseaResource {
       if (!vpcItem.vpcRoute53Resolver?.queryLogs) {
         continue;
       }
-      const associationLogicalIdWithReplacedVpc = `RqlAssoc${vpcItem.name}`.replace('_vpc', '');
+
+      let vpcName: string;
+      if (vpcItem.name.includes(`_${vpcItem.account}`) && !vpcItem.name.includes('..')) {
+        vpcName = vpcItem.name.split(`_${vpcItem.account}`)[0];
+      } else {
+        vpcName = getAseaVpcName(vpcItem.name).replace('_vpc', '');
+      }
+
+      const associationLogicalIdWithReplacedVpc = `RqlAssoc${vpcName}`;
       const associationLogicalId = `${associationLogicalIdWithReplacedVpc}`.replace(/-/g, '');
 
       const importResource = this.scope.importStackResources.getResourceByLogicalId(associationLogicalId);

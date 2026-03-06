@@ -47,6 +47,7 @@ import { ApplicationLoadBalancerResources } from '../asea-resources/application-
 import path from 'path';
 import { ImportStackResources } from '../../utils/import-stack-resources';
 import { NestedStack } from '@aws-accelerator/config';
+import { TransitGatewayPeeringAttachments } from '../asea-resources/transit-gateway-peering-attachments';
 
 /**
  * Enum for log level
@@ -124,6 +125,7 @@ export class ImportAseaResourcesStack extends NetworkStack {
     new SharedSecurityGroups(this, { ...props });
     new TgwCrossAccountResources(this, props);
     new TransitGatewayRoutes(this, { ...props });
+    new TransitGatewayPeeringAttachments(this, { ...props });
     new VpcEndpoints(this, props);
     new SsmInventory(this, props);
     new ManagedAdResources(this, props);
@@ -279,9 +281,17 @@ export class ImportAseaResourcesStack extends NetworkStack {
   private createNestedStackSSMParameters(
     parameterItems: { logicalId: string; parameterName: string; stringValue: string; scope?: string }[],
   ) {
-    const parameters: (cdk.aws_ssm.StringParameter | cdk.aws_ssm.CfnParameter)[] = [];
+    if (!this.nestedStackResources) {
+      return;
+    }
+    const scopes = Object.keys(this.nestedStackResources);
+    const parametersPerStack: { [key: string]: (cdk.aws_ssm.StringParameter | cdk.aws_ssm.CfnParameter)[] } = {};
+    scopes.forEach(scope => {
+      parametersPerStack[scope] = [];
+    });
+
     for (const parameterItem of parameterItems) {
-      if (!parameterItem.scope || !this.nestedStackResources) {
+      if (!parameterItem.scope) {
         continue;
       }
       const nestedStackImportResources = this.nestedStackResources[parameterItem.scope];
@@ -315,9 +325,11 @@ export class ImportAseaResourcesStack extends NetworkStack {
         }
       }
       if (cfnParameter) {
-        parameters.push(cfnParameter);
+        parametersPerStack[parameterItem.scope].push(cfnParameter);
       }
-      this.setSSMDependencies(parameters as cdk.CfnResource[], 2);
+    }
+    for (const scope of Object.keys(parametersPerStack)) {
+      this.setSSMDependencies(parametersPerStack[scope] as cdk.CfnResource[], 2);
     }
   }
 
@@ -333,13 +345,14 @@ export class ImportAseaResourcesStack extends NetworkStack {
     let dependency: cdk.CfnResource = resources[0];
     for (let i = 0; i < resources.length; i++) {
       if (i === 0) {
+        resources[i].addOverride('DependsOn', undefined);
         continue;
       }
       if (i % dependencyFrequency === 0) {
-        resources[i].addDependency(dependency);
+        resources[i].addOverride('DependsOn', dependency.logicalId);
         dependency = resources[i];
       } else {
-        resources[i].addDependency(dependency);
+        resources[i].addOverride('DependsOn', dependency.logicalId);
       }
     }
   }
